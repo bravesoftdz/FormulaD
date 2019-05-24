@@ -53,18 +53,77 @@ object Form1: TForm1
     Left = 839
     Top = 8
     Width = 185
-    Height = 577
-    Caption = 'Panel1'
+    Height = 65
     TabOrder = 1
-    object Button1: TButton
-      Left = 16
-      Top = 16
-      Width = 75
-      Height = 25
-      Caption = 'Save'
-      TabOrder = 0
-      OnClick = Button1Click
+    Visible = False
+    object Label1: TLabel
+      Left = 8
+      Top = 8
+      Width = 23
+      Height = 13
+      Caption = 'Lane'
     end
+    object CnSpinEdit1: TCnSpinEdit
+      Left = 8
+      Top = 24
+      Width = 41
+      Height = 22
+      MaxValue = 2
+      MinValue = 0
+      TabOrder = 0
+      Value = 0
+    end
+  end
+  object Panel2: TPanel
+    Left = 839
+    Top = 79
+    Width = 185
+    Height = 66
+    TabOrder = 2
+    Visible = False
+    object Label2: TLabel
+      Left = 16
+      Top = 9
+      Width = 33
+      Height = 13
+      Caption = 'Corner'
+    end
+    object Label3: TLabel
+      Left = 112
+      Top = 9
+      Width = 22
+      Height = 13
+      Caption = 'Stop'
+    end
+    object CnSpinEdit2: TCnSpinEdit
+      Left = 16
+      Top = 28
+      Width = 41
+      Height = 22
+      MaxValue = 100
+      MinValue = 0
+      TabOrder = 0
+      Value = 0
+    end
+    object CnSpinEdit3: TCnSpinEdit
+      Left = 112
+      Top = 28
+      Width = 41
+      Height = 22
+      MaxValue = 100
+      MinValue = 1
+      TabOrder = 1
+      Value = 1
+    end
+  end
+  object Button1: TButton
+    Left = 939
+    Top = 560
+    Width = 75
+    Height = 25
+    Caption = 'Save'
+    TabOrder = 3
+    OnClick = Button1Click
   end
   object SE_Engine1: SE_Engine
     ClickSprites = False
@@ -82,6 +141,25 @@ object Form1: TForm1
     Priority = 1
     Theater = SE_Theater1
     Left = 520
+    Top = 592
+  end
+  object SE_Engine3: SE_Engine
+    ClickSprites = False
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 0
+    Theater = SE_Theater1
+    RenderBitmap = VisibleRender
+    Left = 576
+    Top = 592
+  end
+  object SE_Engine4: SE_Engine
+    PixelClick = True
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 2
+    Theater = SE_Theater1
+    Left = 624
     Top = 592
   end
 end

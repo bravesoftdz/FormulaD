@@ -6,16 +6,25 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.Generics.Defaults, System.Generics.Collections,
 
-  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, Vcl.ExtCtrls, Vcl.StdCtrls;
+  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin;
 
-type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z} ) ;
+type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z}, modeCorner{K} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
     Panel1: TPanel;
     SE_Engine1: SE_Engine;
-    Button1: TButton;
     SE_Engine2: SE_Engine;
+    CnSpinEdit1: TCnSpinEdit;
+    Label1: TLabel;
+    SE_Engine3: SE_Engine;
+    SE_Engine4: SE_Engine;
+    Panel2: TPanel;
+    Button1: TButton;
+    Label2: TLabel;
+    Label3: TLabel;
+    CnSpinEdit2: TCnSpinEdit;
+    CnSpinEdit3: TCnSpinEdit;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;
@@ -29,6 +38,8 @@ type
       Shift: TShiftState);
   private
     { Private declarations }
+    fmode : TMode;
+    procedure SetMode ( aMode : Tmode );
   public
     { Public declarations }
     function GetCell ( Guid : SmallInt ) : TCell;
@@ -42,31 +53,159 @@ type
     procedure AddAdjacent ( MainSprite,aSprite : SE_Sprite );
     procedure RemoveAdjacent ( MainSprite,aSprite : SE_Sprite );
     procedure ResetSpriteCells;
+    procedure ShowCorners;
+    property Mode :Tmode read fmode write SetMode;
   end;
 
 var
   Form1: TForm1;
   Circuit : TObjectList<TCell>;
   incGuid : SmallInt;
-  mode  : TMode;
   SelectedCell : SE_Sprite;
   DeletedCell: Boolean;
   ClickedCell: Boolean;
+  mm : TMemoryStream;
 implementation
 
 {$R *.dfm}
 
 procedure TForm1.Button1Click(Sender: TObject);
+var
+  ISMARK : array [0..1] of ansichar;
+  i,L,a,count: Integer;
+  dummy : Word;
+  TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
 begin
+  ISMARK [0] := 'I';
+  ISMARK [1] := 'S';
+  mm.Clear;
+  { TODO : lo start }
+  mm.Write( @dummy , SizeOf(word) );    // reserved: indica il byte dove comincia la descrizione delle curve, lo start, la griglia etc... ( incCorner, Stop )
 
- // mm.write @Circuit[0].Guid
- // @Circuit[0].Lane
- // mm.savetofile
+  TotCells := Circuit.Count;
+  mm.Write( @TotCells, sizeof(SmallInt) );
+  for I := Circuit.Count -1 Downto 0 do begin
+    mm.Write( @Circuit[i].Guid , SizeOf(SmallInt));
+    mm.Write( @Circuit[i].Lane , SizeOf(ShortInt));
+    mm.Write( @Circuit[i].Corner , SizeOf(Byte));
+    mm.Write( @Circuit[i].PixelX , SizeOf(SmallInt));
+    mm.Write( @Circuit[i].PixelY , SizeOf(SmallInt));
+
+    TotLinkForward := Circuit[i].LinkForward.Count;
+    mm.Write( @TotLinkForward, sizeof(byte) );
+    for L := Circuit[i].LinkForward.Count -1 Downto 0 do begin
+      tmpb := Circuit[i].LinkForward.Items[L];
+      mm.Write( @tmpb, sizeof(byte) );
+    end;
+
+    TotAdjacent := Circuit[i].Adjacent.Count;
+    mm.Write( @TotAdjacent, sizeof(byte) );
+    for a := Circuit[i].Adjacent.Count -1 Downto 0 do begin
+      tmpb := Circuit[i].Adjacent.Items[a];
+      mm.Write( @tmpb, sizeof(byte) );
+    end;
+
+  end;
+
+
+{  Dummy := mm.Position ;
+
+  mm.Write( @LentsScript, sizeof(word) );  gestione corner
+  mm.Position  := 0; // la prima word indica dove comincia la descrizione delle curve
+  mm.Write( @Dummy, sizeof(word) ); // setto nella integer riservato dove comincia la descrizione delle curve
+
+  mm.Position := mm.size;  }
+  mm.Write( @ISMARK[0], 2 );
+  mm.SaveToFile( '..\server\circuits\barcelona.fd' );
+
 end;
 
+procedure TForm1.SetMode ( aMode : Tmode );
+var
+  aBmp: Se_bitmap;
+  aSprite : SE_Sprite;
+  aColor : TColor;
+  aText : string;
+  w: Integer;
+begin
+  fmode := aMode;
+  case aMode of
+    modeAddCell: begin
+                  Panel1.Visible := True;
+                  Panel2.Visible := false;
+                  CnSpinEdit1.Enabled := true;
+                  aColor := clSilver;
+                  aText := 'Add Cell';
+                 end;
+    modeLinkForward:begin
+                  Panel1.Visible := False;
+                  Panel2.Visible := false;
+                  if SelectedCell <> nil then begin
+                    showLinkForward ( SelectedCell );
+                  end;
+                  aColor := clGreen;
+                  aText := 'Show LinkForward';
+                 end;
+    modeAdjacent: begin
+                  Panel1.Visible := False;
+                  Panel2.Visible := false;
+                  if SelectedCell <> nil then begin
+                    showAdjacent ( SelectedCell );
+                  end;
+                  aColor := clYellow;
+                  aText := 'Show Adjacent';
+                 end;
+    modeMoveCell:begin
+                  Panel1.Visible := true;
+                  Panel2.Visible := false;
+                  CnSpinEdit1.Enabled := False;
+                  aColor := clSilver;
+                  aText := 'Move Cell';
+               end;
+    modeSelectCell:begin
+                  Panel1.Visible := True;
+                  Panel2.Visible := false;
+                  CnSpinEdit1.Enabled := false;
+                  aColor := clRed;
+                  aText := 'Select Cell';
+                 end;
+    modePanZoom: begin
+                  Panel1.Visible := false;
+                  Panel2.Visible := false;
+                  SE_Theater1.MousePan := True;
+                  SE_Theater1.MouseWheelZoom := True;
+                  aColor := clSilver;
+                  aText := 'Zoom/Pan';
+                 end;
+    modeCorner:  begin
+                  Panel1.Visible := false;
+                  Panel2.Visible := true;
+                  ShowCorners;
+                  aColor := clAqua;
+                  aText := 'Set Corner/Straight';
+                 end;
+  end;
+
+  SE_Engine3.RemoveAllSprites;
+  aBmp:= Se_bitmap.Create (160,20);
+  aBmp.Bitmap.Canvas.Brush.color := clBlack;
+  aBmp.Bitmap.Canvas.FillRect( Rect(0,0,160,20)  );
+  aBmp.Bitmap.Canvas.Font.color := aColor;
+  aBmp.Bitmap.Canvas.Font.Size := 12;
+  aBmp.Bitmap.Canvas.Font.Style := [fsBold];
+  aBmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+  w:= aBmp.Bitmap.Canvas.TextWidth( aText );
+  aBmp.Bitmap.Canvas.TextOut( (aBmp.Width div 2) - (w div 2) ,0, aText);
+
+  aSprite := SE_Sprite.Create (aBmp.bitmap, 'modeinfo' ,1,1,1000,SE_Theater1.Width Div 2,aBmp.Height div 2 ,False );
+  SE_Engine3.AddSprite( aSprite );
+  aBmp.free;
+
+
+end;
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  aCell : TCell;
   aSprite : SE_Sprite;
 begin
 
@@ -83,12 +222,16 @@ begin
   Mode := modePanZoom;
   SE_Theater1.Active := True;
   incGuid := 0;
+  mm := TMemoryStream.Create;
+
+//  LoadCircuit;
 
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   Circuit.Free;
+  mm.free;
 end;
 
 procedure TForm1.FormKeyPress(Sender: TObject; var Key: Char);
@@ -96,30 +239,27 @@ begin
   SE_Theater1.MousePan := false;
   SE_Theater1.MouseWheelZoom := False;
 
-  if UpperCase(Key) = 'C' then
-    Mode := modeAddCell
-    else if UpperCase(Key) = 'L' then
-     begin
-      Mode := modeLinkForward;
-        if SelectedCell <> nil then begin
-          showLinkForward ( SelectedCell );
-        end;
-     end
-      else if UpperCase(Key) = 'A' then begin
-        Mode := modeAdjacent;
-        if SelectedCell <> nil then begin
-          showAdjacent ( SelectedCell );
-        end;
-      end
-        else if UpperCase(Key) = 'M' then
-          Mode := modeMoveCell
-          else if UpperCase(Key) = 'S' then
-            Mode := modeSelectCell
-          else if UpperCase(Key) = 'Z' then begin
-            Mode := modePanZoom;
-            SE_Theater1.MousePan := True;
-            SE_Theater1.MouseWheelZoom := True;
-          end;
+  if UpperCase(Key) = 'C' then begin
+    Mode := modeAddCell;
+  end
+  else if UpperCase(Key) = 'L' then
+  begin
+    Mode := modeLinkForward;
+  end
+  else if UpperCase(Key) = 'A' then begin
+    Mode := modeAdjacent;
+  end
+  else if UpperCase(Key) = 'M' then
+    Mode := modeMoveCell
+  else if UpperCase(Key) = 'S' then begin
+    Mode := modeSelectCell;
+  end
+  else if UpperCase(Key) = 'K' then begin
+    Mode := modeCorner;
+  end
+  else if UpperCase(Key) = 'Z' then begin
+    Mode := modePanZoom;
+  end;
 end;
 
 procedure TForm1.SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;  Shift: TShiftState);
@@ -131,6 +271,8 @@ begin
     case Button of
       mbLeft: begin
         SelectCell ( lstSprite[0] );
+        aCell := GetCell( StrToInt(lstsprite[0].guid) );
+        CnSpinEdit1.Value := aCell.Lane;
       end;
       mbRight: begin
         DeleteCellCircuit ( lstSprite[0] );
@@ -170,6 +312,20 @@ begin
       end;
     end;
 
+  end
+  else if mode = modeCorner then begin
+    ClickedCell := True;
+    aCell := GetCell( StrToInt(lstsprite[0].guid) );
+    case Button of
+      mbLeft: begin
+        aCell.Corner := CnSpinEdit2.Value;
+      end;
+      mbRight: begin
+        aCell.Corner := 0;
+      end;
+    end;
+    ShowCorners;
+
   end;
 
 end;
@@ -195,7 +351,8 @@ begin
       aCell := TCell.Create;
       aCell.PixelX := VirtualX;
       aCell.PixelY := VirtualY;
-      aCell.Lane := 0;
+      aCell.Lane := CnSpinEdit1.Value;
+      CnSpinEdit1.Enabled := True;
       aCell.Guid := incGuid;
 
       Circuit.Add(aCell);
@@ -262,7 +419,6 @@ var
   i: Integer;
 begin
   aSprite.Dead := True;
-//  SelectedCell := nil;
   DeletedCell := True;
   for i := Circuit.Count -1 downto 0 do begin
     if Circuit[i].Guid =  StrToInt(aSprite.Guid) then begin
@@ -275,6 +431,7 @@ end;
 procedure TForm1.SelectCell ( aSprite : SE_Sprite );
 var
   i: Integer;
+  aCell: TCell;
 begin
   // reset di tutti gli sprite Cell
 
@@ -293,15 +450,14 @@ begin
   aSprite.Bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
 
   if mode = modeAdjacent then begin
-    // coloro adiacenti
     ShowAdjacent ( aSprite );
   end
   else if mode = modeLinkForward then begin
-    // coloro Linkforward
     ShowLinkForward ( aSprite );
   end;
 
-
+  aCell := GetCell ( StrToInt (aSprite.Guid) );                   // dallo sprite alla cella
+  CnSpinEdit1.Value := aCell.Lane;
 end;
 
 procedure TForm1.ShowLinkForward ( MainSprite: SE_Sprite );
@@ -338,9 +494,7 @@ begin
 end;
 procedure TForm1.AddLinkForward ( MainSprite, aSprite : SE_Sprite );
 var
-  i: Integer;
-  aCell, aCellLinked :TCell;
-  LinkedSprite: SE_Sprite;
+  aCell :TCell;
 begin
   aCell := GetCell ( StrToInt (MainSprite.Guid) );                   // dallo sprite alla cella
   aCell.LinkForward.Add( StrToInt (aSprite.Guid) );
@@ -350,7 +504,6 @@ begin
 end;
 procedure TForm1.AddAdjacent ( MainSprite, aSprite : SE_Sprite );
 var
-  i: Integer;
   aCell  :TCell;
 begin
   aCell := GetCell ( StrToInt (MainSprite.Guid) );                   // dallo sprite alla cella
@@ -409,6 +562,27 @@ begin
   end;
 
 end;
+procedure TForm1.ShowCorners;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+    if Circuit[i].Corner <> 0 then begin
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clAqua;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clNavy;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
+      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].Corner ));
+    end;
+  end;
+
+end;
 
 end.

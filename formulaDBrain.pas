@@ -8,9 +8,8 @@ type TCell = Class
   Lane : Byte;
   LinkForward : SE_IntegerList;
   Adjacent : SE_IntegerList;
-//  Kind : LaneCorner
-  PixelX,PixelY : Integer;
-  Angle : SmallInt;
+  Corner : Byte;
+  PixelX,PixelY : SmallInt;
   constructor Create;
   destructor Destroy;override;
 end;
