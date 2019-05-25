@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.Generics.Defaults, System.Generics.Collections,
 
-  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin;
+  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, Vcl.Grids;
 
 type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z}, modeCorner{K} ) ;
 type
@@ -22,9 +22,15 @@ type
     Panel2: TPanel;
     Button1: TButton;
     Label2: TLabel;
-    Label3: TLabel;
     CnSpinEdit2: TCnSpinEdit;
+    Panel3: TPanel;
+    Label4: TLabel;
     CnSpinEdit3: TCnSpinEdit;
+    StringGrid1: TStringGrid;
+    Panel4: TPanel;
+    StringGrid2: TStringGrid;
+    Button2: TButton;
+    SE_SearchFiles1: SE_SearchFiles;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;
@@ -36,6 +42,9 @@ type
       Shift: TShiftState);
     procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;
       Shift: TShiftState);
+    procedure CnSpinEdit3Change(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
   private
     { Private declarations }
     fmode : TMode;
@@ -76,6 +85,7 @@ var
   dummy : Word;
   TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
 begin
+  { TODO : check corners }
   ISMARK [0] := 'I';
   ISMARK [1] := 'S';
   mm.Clear;
@@ -118,6 +128,42 @@ begin
   mm.Write( @ISMARK[0], 2 );
   mm.SaveToFile( '..\server\circuits\barcelona.fd' );
 
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  i: Integer;
+begin
+
+  SE_SearchFiles1.FromPath :=  ('..\server\circuits\' );
+  SE_SearchFiles1.MaskInclude.Add(  '*.fd');
+  SE_SearchFiles1.Execute;
+
+  while SE_SearchFiles1.SearchState <> ssIdle do begin
+    application.ProcessMessages;
+  end;
+
+  StringGrid2.RowCount := SE_SearchFiles1.ListFiles.count ;
+
+  for I := 0 to SE_SearchFiles1.ListFiles.Count -1 do begin
+    StringGrid2.Cells[ 0, i] :=  SE_SearchFiles1.ListFiles[i];
+  end;
+
+  Panel4.Visible := True;
+
+end;
+
+procedure TForm1.CnSpinEdit3Change(Sender: TObject);
+var
+  i: Integer;
+begin
+  StringGrid1.RowCount := CnSpinEdit3.Value;
+  StringGrid1.Cells [0,0]:= 'Corner';
+  StringGrid1.Cells [1,0]:= 'Stop';
+
+  for I := 1 to CnSpinEdit3.Value do begin
+    StringGrid1.Cells [0,i]:= IntToStr(i);
+  end;
 end;
 
 procedure TForm1.SetMode ( aMode : Tmode );
@@ -205,23 +251,10 @@ begin
 
 end;
 procedure TForm1.FormCreate(Sender: TObject);
-var
-  aSprite : SE_Sprite;
 begin
 
   Circuit := TObjectList<TCell>.Create(True);
-
-  aSprite := SE_Sprite.Create ('..\client\bmp\circuits\barcelona.bmp','circuit',1,1,1000,0,0,false );
-
-  SE_Theater1.VirtualWidth := aSprite.BMP.Width;
-  SE_Theater1.VirtualHeight := aSprite.BMP.Height;
-
-  SE_Engine1.AddSprite( aSprite );
-  aSprite.Position := Point (  SE_Theater1.VirtualWidth div 2 , SE_Theater1.Virtualheight div 2  );
-
-  Mode := modePanZoom;
   SE_Theater1.Active := True;
-  incGuid := 0;
   mm := TMemoryStream.Create;
 
 //  LoadCircuit;
@@ -476,6 +509,35 @@ begin
     LinkedSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
   end;
 end;
+procedure TForm1.StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
+var
+  aSprite : SE_Sprite;
+  i: Integer;
+begin
+  Circuit.Clear;
+
+  SE_Theater1.Active := False;
+  aSprite := SE_Sprite.Create ('..\client\bmp\circuits\'+ JustNameL ( StringGrid2.Cells[0,aRow] )+'.bmp','circuit',1,1,1000,0,0,false );
+
+  for i := 0 to SE_Theater1.EngineCount -1 do begin
+    SE_Theater1.Engines [i].RemoveAllSprites;
+  end;
+
+  SE_Theater1.VirtualWidth := aSprite.BMP.Width;
+  SE_Theater1.VirtualHeight := aSprite.BMP.Height;
+
+  SE_Engine1.AddSprite( aSprite );
+  aSprite.Position := Point (  SE_Theater1.VirtualWidth div 2 , SE_Theater1.Virtualheight div 2  );
+  SE_Theater1.Active := True;
+
+  Mode := modePanZoom;
+  incGuid := 0;
+  Panel4.Visible := False;
+  Panel3.Visible := True;
+//  LoadCircuit (StringGrid2.Cells[0,aRow])  ;
+
+end;
+
 procedure TForm1.ShowAdjacent ( MainSprite: SE_Sprite );
 var
   i: Integer;

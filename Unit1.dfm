@@ -82,21 +82,14 @@ object Form1: TForm1
     TabOrder = 2
     Visible = False
     object Label2: TLabel
-      Left = 16
+      Left = 8
       Top = 9
       Width = 33
       Height = 13
       Caption = 'Corner'
     end
-    object Label3: TLabel
-      Left = 112
-      Top = 9
-      Width = 22
-      Height = 13
-      Caption = 'Stop'
-    end
     object CnSpinEdit2: TCnSpinEdit
-      Left = 16
+      Left = 8
       Top = 28
       Width = 41
       Height = 22
@@ -104,16 +97,6 @@ object Form1: TForm1
       MinValue = 0
       TabOrder = 0
       Value = 0
-    end
-    object CnSpinEdit3: TCnSpinEdit
-      Left = 112
-      Top = 28
-      Width = 41
-      Height = 22
-      MaxValue = 100
-      MinValue = 1
-      TabOrder = 1
-      Value = 1
     end
   end
   object Button1: TButton
@@ -124,6 +107,77 @@ object Form1: TForm1
     Caption = 'Save'
     TabOrder = 3
     OnClick = Button1Click
+  end
+  object Panel3: TPanel
+    Left = 839
+    Top = 151
+    Width = 185
+    Height = 403
+    TabOrder = 4
+    Visible = False
+    object Label4: TLabel
+      Left = 8
+      Top = 8
+      Width = 65
+      Height = 13
+      Caption = 'Total Corners'
+    end
+    object CnSpinEdit3: TCnSpinEdit
+      Left = 79
+      Top = 5
+      Width = 41
+      Height = 22
+      MaxValue = 100
+      MinValue = 1
+      TabOrder = 0
+      Value = 1
+      OnChange = CnSpinEdit3Change
+    end
+    object StringGrid1: TStringGrid
+      Left = 8
+      Top = 33
+      Width = 113
+      Height = 360
+      ColCount = 2
+      DefaultColWidth = 48
+      DefaultRowHeight = 18
+      RowCount = 3
+      Options = [goEditing]
+      ScrollBars = ssVertical
+      TabOrder = 1
+    end
+  end
+  object Panel4: TPanel
+    Left = 839
+    Top = 151
+    Width = 185
+    Height = 403
+    TabOrder = 5
+    object StringGrid2: TStringGrid
+      Left = 8
+      Top = 9
+      Width = 137
+      Height = 360
+      ColCount = 1
+      DefaultColWidth = 120
+      DefaultRowHeight = 18
+      FixedCols = 0
+      RowCount = 4
+      FixedRows = 0
+      Options = []
+      ScrollBars = ssVertical
+      TabOrder = 0
+      OnSelectCell = StringGrid2SelectCell
+    end
+  end
+  object Button2: TButton
+    Left = 839
+    Top = 560
+    Width = 75
+    Height = 25
+    Caption = 'Load'
+    TabOrder = 6
+    OnClick = Button2Click
   end
   object SE_Engine1: SE_Engine
     ClickSprites = False
@@ -161,5 +215,10 @@ object Form1: TForm1
     Theater = SE_Theater1
     Left = 624
     Top = 592
+  end
+  object SE_SearchFiles1: SE_SearchFiles
+    SubDirectories = True
+    Left = 872
+    Top = 600
   end
 end
