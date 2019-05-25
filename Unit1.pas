@@ -9,7 +9,7 @@ uses
   DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, System.IniFiles, Vcl.Grids;
 
 type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z},
-                modeCorner{K},modeStartingGrid{G}, modeBox{B} ) ;
+                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
@@ -24,7 +24,7 @@ type
     Button1: TButton;
     Label2: TLabel;
     CnSpinEdit2: TCnSpinEdit;
-    Panel5: TPanel;
+    Panel6: TPanel;
     StringGrid2: TStringGrid;
     Button2: TButton;
     SE_SearchFiles1: SE_SearchFiles;
@@ -64,7 +64,8 @@ type
     procedure ShowCorners;
     procedure ShowStartingGrid;
     procedure ShowBox;
-    procedure LoadCircuit ( Circuit: string );
+    procedure ShowfinishLine;
+    procedure LoadCircuit ( CircuitName: string );
     property Mode :Tmode read fmode write SetMode;
   end;
 
@@ -97,6 +98,7 @@ begin
     mm.Write( @Circuit[i].Corner , SizeOf(Byte));
     mm.Write( @Circuit[i].StartingGrid , SizeOf(Byte));
     mm.Write( @Circuit[i].Box , SizeOf(Byte));
+    mm.Write( @Circuit[i].FinishLine , SizeOf(Boolean));
     mm.Write( @Circuit[i].PixelX , SizeOf(SmallInt));
     mm.Write( @Circuit[i].PixelY , SizeOf(SmallInt));
 
@@ -117,45 +119,65 @@ begin
   end;
 
   mm.SaveToFile( '..\server\circuits\barcelona.fd' );
-  mm.SaveToFile( '..\client\circuits\barcelona.fd' );
+  mm.SaveToFile( '..\client\bmp\circuits\barcelona.fd' );
 
 end;
-procedure TForm1.LoadCircuit ( Circuit: string );
+procedure TForm1.LoadCircuit ( CircuitName: string );
 var
   ini : TIniFile;
   tmpSmallInt: SmallInt;
   i,L,a,count: Integer;
   aCell: TCell;
   TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
+  aBmp: SE_Bitmap;
+  aSprite: SE_Sprite;
 begin
-  ini := TIniFile.Create( '..\server\circuits\' + Circuit + '.ini' );
+  Circuit.clear;
+  aBmp:= Se_bitmap.Create (20,20);
+  aBmp.Bitmap.Canvas.Brush.color := clGray;
+  aBmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+
+  ini := TIniFile.Create( '..\server\circuits\' + CircuitName + '.ini' );
   CircuitDescr.Corners := ini.ReadInteger('setup','corners',0);
   ini.Free;
 
-  mm.LoadFromFile(  '..\server\circuits\' + Circuit + '.fd' );
-  mm.ReadData( @TotCells, SizeOf(SmallInt) );
+  mm.LoadFromFile(  '..\server\circuits\' + CircuitName + '.fd' );
+  mm.Position := 0;
+  mm.Read ( TotCells, SizeOf(SmallInt) );
   for I := 0 to TotCells -1 do begin
     aCell := TCell.Create;
-    mm.ReadData( @aCell.Guid , SizeOf(SmallInt) );
-    mm.ReadData( @aCell.Lane , SizeOf(ShortInt) );
-    mm.ReadData( @aCell.Corner , SizeOf(Byte) );
-    mm.ReadData( @aCell.StartingGrid , SizeOf(Byte) );
-    mm.ReadData( @aCell.Box , SizeOf(Byte) );
-    mm.ReadData( @aCell.PixelX , SizeOf(SmallInt) );
-    mm.ReadData( @aCell.PixelY , SizeOf(SmallInt) );
+    mm.Read( aCell.Guid , SizeOf(SmallInt) );
+    mm.Read( aCell.Lane , SizeOf(ShortInt) );
+    mm.Read( aCell.Corner , SizeOf(Byte) );
+    mm.Read( aCell.StartingGrid , SizeOf(Byte) );
+    mm.Read( aCell.Box , SizeOf(Byte) );
+    mm.Read( aCell.FinishLine , SizeOf(Boolean) );
+    mm.Read( aCell.PixelX , SizeOf(SmallInt) );
+    mm.Read( aCell.PixelY , SizeOf(SmallInt) );
       // load linkForward e Adjacent
-    mm.ReadData( @TotLinkForward, SizeOf(Byte) );
+    mm.Read( TotLinkForward, SizeOf(Byte) );
     for L := 0 to TotLinkForward -1 do begin
-      mm.ReadData( @tmpB , SizeOf(Byte) );
+      mm.Read( tmpB , SizeOf(Byte) );
       aCell.LinkForward.add ( tmpB );
     end;
-    mm.ReadData( @TotAdjacent, SizeOf(Byte) );
+    mm.Read( TotAdjacent, SizeOf(Byte) );
     for A := 0 to TotAdjacent -1 do begin
-      mm.ReadData( @tmpB , SizeOf(Byte) );
+      mm.Read( tmpB , SizeOf(Byte) );
       aCell.Adjacent.add ( tmpB );
     end;
-  end;
 
+    // tutte clgray all'inizio
+    Circuit.Add(aCell);
+    aSprite := SE_Sprite.Create (aBmp.bitmap, IntToStr(i) ,1,1,1000,0,0,true );
+    SE_Engine2.AddSprite( aSprite );
+    aSprite.Position := Point (  aCell.PixelX , aCell.PixelY  );
+
+  end;
+  incGuid := TotCells - 1;
+  Panel6.Visible := False;
+
+  SelectCell ( aSprite );
+  aBmp.free;
 
 end;
 
@@ -178,7 +200,7 @@ begin
     StringGrid2.Cells[ 0, i] :=  SE_SearchFiles1.ListFiles[i];
   end;
 
-  Panel5.Visible := True;
+  Panel6.Visible := True;
 
 end;
 
@@ -244,14 +266,19 @@ begin
     modeStartingGrid:  begin
                   Panel3.Visible := True;
                   ShowStartingGrid;
-                  aColor := clBlack;
+                  aColor := clSilver;
                   aText := 'Set Starting Grid';
                  end;
     modeBox:     begin
                   Panel4.Visible := True;
-                 // ShowBox;
+                  ShowBox;
                   aColor := clWhite;
-                  aText := 'Set Boxd';
+                  aText := 'Set Box';
+                 end;
+    modeFinishLine: begin
+                  ShowFinishLine;
+                  aColor := clWhite;
+                  aText := 'Set Finish Line';
                  end;
   end;
 
@@ -316,6 +343,9 @@ begin
   else if UpperCase(Key) = 'B' then begin
     Mode := modeBox;
   end
+  else if UpperCase(Key) = 'F' then begin
+    Mode := modeFinishLine;
+  end
   else if UpperCase(Key) = 'Z' then begin
     Mode := modePanZoom;
   end;
@@ -344,6 +374,7 @@ begin
     case Button of
       mbRight: begin
         DeleteCellCircuit ( lstSprite[0] );
+        SelectedCell := nil;
       end;
     end;
 
@@ -412,6 +443,20 @@ begin
       end;
     end;
     ShowBox;
+
+  end
+  else if mode = modefinishLine then begin
+    ClickedCell := True;
+    aCell := GetCell( StrToInt(lstsprite[0].guid) );
+    case Button of
+      mbLeft: begin
+        aCell.finishLine := True;
+      end;
+      mbRight: begin
+        aCell.finishLine := false;
+      end;
+    end;
+    ShowFinishLine;
 
   end;
 
@@ -589,6 +634,7 @@ begin
   incGuid := 0;
   Panel4.Visible := False;
   LoadCircuit ( JustNameL( StringGrid2.Cells[0,aRow]))  ;
+  Mode := modePanZoom;
 
 end;
 
@@ -731,7 +777,7 @@ begin
   for i := Circuit.Count -1 downto 0 do begin
     if Circuit[i].Box <> 0 then begin
       aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
-      aSprite.bmp.Bitmap.Canvas.Brush.color := clWhite;
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clWhite-1;
       aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clBlack;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
@@ -740,6 +786,28 @@ begin
       aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
       aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].Box ));
+    end;
+  end;
+
+end;
+procedure TForm1.ShowFinishLine;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+    if Circuit[i].FinishLine  then begin
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clWhite-1;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clBlack;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
+      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(  Integer(Circuit[i].FinishLine) ));
     end;
   end;
 

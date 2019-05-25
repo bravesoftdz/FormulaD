@@ -16,6 +16,7 @@ type TCell = Class
   Corner : Byte;
   StartingGrid : Byte;
   Box : Byte;
+  FinishLine : Boolean;
   PixelX,PixelY : SmallInt;
   constructor Create;
   destructor Destroy;override;

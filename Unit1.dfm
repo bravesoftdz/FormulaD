@@ -22,7 +22,7 @@ object Form1: TForm1
     Left = 8
     Top = 8
     Width = 825
-    Height = 577
+    Height = 689
     MouseScrollRate = 1.000000000000000000
     MouseWheelInvert = False
     MouseWheelValue = 10
@@ -100,26 +100,26 @@ object Form1: TForm1
     end
   end
   object Button1: TButton
-    Left = 939
-    Top = 632
+    Left = 949
+    Top = 672
     Width = 75
     Height = 25
     Caption = 'Save'
     TabOrder = 3
     OnClick = Button1Click
   end
-  object Panel5: TPanel
+  object Panel6: TPanel
     Left = 839
     Top = 295
     Width = 185
-    Height = 290
+    Height = 354
     TabOrder = 4
     Visible = False
     object StringGrid2: TStringGrid
       Left = 8
       Top = 9
       Width = 137
-      Height = 272
+      Height = 328
       ColCount = 1
       DefaultColWidth = 120
       DefaultRowHeight = 18
@@ -134,7 +134,7 @@ object Form1: TForm1
   end
   object Button2: TButton
     Left = 839
-    Top = 632
+    Top = 672
     Width = 75
     Height = 25
     Caption = 'Load'
@@ -197,8 +197,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 0
     Theater = SE_Theater1
-    Left = 472
-    Top = 592
+    Left = 448
+    Top = 704
   end
   object SE_Engine2: SE_Engine
     PixelClick = True
@@ -206,8 +206,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 1
     Theater = SE_Theater1
-    Left = 520
-    Top = 592
+    Left = 496
+    Top = 704
   end
   object SE_Engine3: SE_Engine
     ClickSprites = False
@@ -216,8 +216,8 @@ object Form1: TForm1
     Priority = 0
     Theater = SE_Theater1
     RenderBitmap = VisibleRender
-    Left = 576
-    Top = 592
+    Left = 552
+    Top = 704
   end
   object SE_Engine4: SE_Engine
     PixelClick = True
@@ -225,12 +225,12 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 2
     Theater = SE_Theater1
-    Left = 624
-    Top = 592
+    Left = 600
+    Top = 704
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
-    Left = 688
-    Top = 584
+    Left = 664
+    Top = 696
   end
 end
