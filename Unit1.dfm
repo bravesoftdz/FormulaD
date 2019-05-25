@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 681
-  ClientWidth = 1022
+  ClientHeight = 764
+  ClientWidth = 1102
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -108,17 +108,18 @@ object Form1: TForm1
     TabOrder = 3
     OnClick = Button1Click
   end
-  object Panel4: TPanel
+  object Panel5: TPanel
     Left = 839
-    Top = 223
+    Top = 295
     Width = 185
-    Height = 403
+    Height = 290
     TabOrder = 4
+    Visible = False
     object StringGrid2: TStringGrid
       Left = 8
       Top = 9
       Width = 137
-      Height = 360
+      Height = 272
       ColCount = 1
       DefaultColWidth = 120
       DefaultRowHeight = 18
@@ -163,6 +164,31 @@ object Form1: TForm1
       MinValue = 0
       TabOrder = 0
       Value = 0
+    end
+  end
+  object Panel4: TPanel
+    Left = 839
+    Top = 223
+    Width = 185
+    Height = 66
+    TabOrder = 7
+    Visible = False
+    object Label4: TLabel
+      Left = 8
+      Top = 9
+      Width = 18
+      Height = 13
+      Caption = 'Box'
+    end
+    object CnSpinEdit4: TCnSpinEdit
+      Left = 8
+      Top = 28
+      Width = 41
+      Height = 22
+      MaxValue = 5
+      MinValue = 1
+      TabOrder = 0
+      Value = 1
     end
   end
   object SE_Engine1: SE_Engine

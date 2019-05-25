@@ -15,6 +15,7 @@ type TCell = Class
   Adjacent : SE_IntegerList;
   Corner : Byte;
   StartingGrid : Byte;
+  Box : Byte;
   PixelX,PixelY : SmallInt;
   constructor Create;
   destructor Destroy;override;
