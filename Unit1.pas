@@ -6,9 +6,9 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.Generics.Defaults, System.Generics.Collections,
 
-  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, Vcl.Grids;
+  DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, System.IniFiles, Vcl.Grids;
 
-type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z}, modeCorner{K} ) ;
+type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z}, modeCorner{K},modeStartingGrid{G} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
@@ -23,26 +23,21 @@ type
     Button1: TButton;
     Label2: TLabel;
     CnSpinEdit2: TCnSpinEdit;
-    Panel3: TPanel;
-    Label4: TLabel;
-    CnSpinEdit3: TCnSpinEdit;
-    StringGrid1: TStringGrid;
     Panel4: TPanel;
     StringGrid2: TStringGrid;
     Button2: TButton;
     SE_SearchFiles1: SE_SearchFiles;
+    Panel3: TPanel;
+    Label3: TLabel;
+    CnSpinEdit3: TCnSpinEdit;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;
-      Shift: TShiftState);
+    procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
     procedure Button1Click(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure SE_Theater1TheaterMouseMove(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Shift: TShiftState);
-    procedure SE_Theater1TheaterMouseUp(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;
-      Shift: TShiftState);
-    procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;
-      Shift: TShiftState);
-    procedure CnSpinEdit3Change(Sender: TObject);
+    procedure SE_Theater1TheaterMouseUp(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton; Shift: TShiftState);
+    procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
     procedure Button2Click(Sender: TObject);
     procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
   private
@@ -63,12 +58,15 @@ type
     procedure RemoveAdjacent ( MainSprite,aSprite : SE_Sprite );
     procedure ResetSpriteCells;
     procedure ShowCorners;
+    procedure ShowStartingGrid;
+    procedure LoadCircuit ( Circuit: string );
     property Mode :Tmode read fmode write SetMode;
   end;
 
 var
   Form1: TForm1;
   Circuit : TObjectList<TCell>;
+  CircuitDescr: TCircuitDescr;
   incGuid : SmallInt;
   SelectedCell : SE_Sprite;
   DeletedCell: Boolean;
@@ -80,17 +78,11 @@ implementation
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  ISMARK : array [0..1] of ansichar;
   i,L,a,count: Integer;
-  dummy : Word;
   TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
 begin
-  { TODO : check corners }
-  ISMARK [0] := 'I';
-  ISMARK [1] := 'S';
+  { TODO : check corners e startinggrid }
   mm.Clear;
-  { TODO : lo start }
-  mm.Write( @dummy , SizeOf(word) );    // reserved: indica il byte dove comincia la descrizione delle curve, lo start, la griglia etc... ( incCorner, Stop )
 
   TotCells := Circuit.Count;
   mm.Write( @TotCells, sizeof(SmallInt) );
@@ -98,6 +90,7 @@ begin
     mm.Write( @Circuit[i].Guid , SizeOf(SmallInt));
     mm.Write( @Circuit[i].Lane , SizeOf(ShortInt));
     mm.Write( @Circuit[i].Corner , SizeOf(Byte));
+    mm.Write( @Circuit[i].StartingGrid , SizeOf(Byte));
     mm.Write( @Circuit[i].PixelX , SizeOf(SmallInt));
     mm.Write( @Circuit[i].PixelY , SizeOf(SmallInt));
 
@@ -117,16 +110,45 @@ begin
 
   end;
 
-
-{  Dummy := mm.Position ;
-
-  mm.Write( @LentsScript, sizeof(word) );  gestione corner
-  mm.Position  := 0; // la prima word indica dove comincia la descrizione delle curve
-  mm.Write( @Dummy, sizeof(word) ); // setto nella integer riservato dove comincia la descrizione delle curve
-
-  mm.Position := mm.size;  }
-  mm.Write( @ISMARK[0], 2 );
   mm.SaveToFile( '..\server\circuits\barcelona.fd' );
+  mm.SaveToFile( '..\client\circuits\barcelona.fd' );
+
+end;
+procedure TForm1.LoadCircuit ( Circuit: string );
+var
+  ini : TIniFile;
+  tmpSmallInt: SmallInt;
+  i,L,a,count: Integer;
+  aCell: TCell;
+  TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
+begin
+  ini := TIniFile.Create( '..\server\circuits\' + Circuit + '.ini' );
+  CircuitDescr.Corners := ini.ReadInteger('setup','corners',0);
+  ini.Free;
+
+  mm.LoadFromFile(  '..\server\circuits\' + Circuit + '.fd' );
+  mm.Read( @TotCells, SizeOf(SmallInt) );
+  for I := 0 to TotCells -1 do begin
+    aCell := TCell.Create;
+    mm.Read( @aCell.Guid , SizeOf(SmallInt) );
+    mm.Read( @aCell.Lane , SizeOf(ShortInt) );
+    mm.Read( @aCell.Corner , SizeOf(Byte) );
+    mm.Read( @aCell.StartingGrid , SizeOf(Byte) );
+    mm.Read( @aCell.PixelX , SizeOf(SmallInt) );
+    mm.Read( @aCell.PixelY , SizeOf(SmallInt) );
+      // load linkForward e Adjacent
+    mm.Read( @TotLinkForward, SizeOf(Byte) );
+    for L := 0 to TotLinkForward -1 do begin
+      mm.Read( @tmpB , SizeOf(Byte) );
+      aCell.LinkForward.add ( tmpB );
+    end;
+    mm.Read( @TotAdjacent, SizeOf(Byte) );
+    for L := 0 to TotAdjacent -1 do begin
+      mm.Read( @tmpB , SizeOf(Byte) );
+      aCell.LinkForward.add ( tmpB );
+    end;
+  end;
+
 
 end;
 
@@ -136,7 +158,7 @@ var
 begin
 
   SE_SearchFiles1.FromPath :=  ('..\server\circuits\' );
-  SE_SearchFiles1.MaskInclude.Add(  '*.fd');
+  SE_SearchFiles1.MaskInclude.Add(  '*.ini');
   SE_SearchFiles1.Execute;
 
   while SE_SearchFiles1.SearchState <> ssIdle do begin
@@ -153,19 +175,6 @@ begin
 
 end;
 
-procedure TForm1.CnSpinEdit3Change(Sender: TObject);
-var
-  i: Integer;
-begin
-  StringGrid1.RowCount := CnSpinEdit3.Value;
-  StringGrid1.Cells [0,0]:= 'Corner';
-  StringGrid1.Cells [1,0]:= 'Stop';
-
-  for I := 1 to CnSpinEdit3.Value do begin
-    StringGrid1.Cells [0,i]:= IntToStr(i);
-  end;
-end;
-
 procedure TForm1.SetMode ( aMode : Tmode );
 var
   aBmp: Se_bitmap;
@@ -179,6 +188,7 @@ begin
     modeAddCell: begin
                   Panel1.Visible := True;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   CnSpinEdit1.Enabled := true;
                   aColor := clSilver;
                   aText := 'Add Cell';
@@ -186,6 +196,7 @@ begin
     modeLinkForward:begin
                   Panel1.Visible := False;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   if SelectedCell <> nil then begin
                     showLinkForward ( SelectedCell );
                   end;
@@ -195,6 +206,7 @@ begin
     modeAdjacent: begin
                   Panel1.Visible := False;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   if SelectedCell <> nil then begin
                     showAdjacent ( SelectedCell );
                   end;
@@ -204,6 +216,7 @@ begin
     modeMoveCell:begin
                   Panel1.Visible := true;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   CnSpinEdit1.Enabled := False;
                   aColor := clSilver;
                   aText := 'Move Cell';
@@ -211,6 +224,7 @@ begin
     modeSelectCell:begin
                   Panel1.Visible := True;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   CnSpinEdit1.Enabled := false;
                   aColor := clRed;
                   aText := 'Select Cell';
@@ -218,6 +232,7 @@ begin
     modePanZoom: begin
                   Panel1.Visible := false;
                   Panel2.Visible := false;
+                  Panel3.Visible := false;
                   SE_Theater1.MousePan := True;
                   SE_Theater1.MouseWheelZoom := True;
                   aColor := clSilver;
@@ -226,9 +241,18 @@ begin
     modeCorner:  begin
                   Panel1.Visible := false;
                   Panel2.Visible := true;
+                  Panel3.Visible := false;
                   ShowCorners;
                   aColor := clAqua;
                   aText := 'Set Corner/Straight';
+                 end;
+    modeStartingGrid:  begin
+                  Panel1.Visible := false;
+                  Panel2.Visible := false;
+                  Panel3.Visible := True;
+                  ShowStartingGrid;
+                  aColor := clBlack;
+                  aText := 'Set Starting Grid';
                  end;
   end;
 
@@ -257,8 +281,6 @@ begin
   SE_Theater1.Active := True;
   mm := TMemoryStream.Create;
 
-//  LoadCircuit;
-
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -275,8 +297,7 @@ begin
   if UpperCase(Key) = 'C' then begin
     Mode := modeAddCell;
   end
-  else if UpperCase(Key) = 'L' then
-  begin
+  else if UpperCase(Key) = 'L' then begin
     Mode := modeLinkForward;
   end
   else if UpperCase(Key) = 'A' then begin
@@ -289,6 +310,9 @@ begin
   end
   else if UpperCase(Key) = 'K' then begin
     Mode := modeCorner;
+  end
+  else if UpperCase(Key) = 'G' then begin
+    Mode := modeStartingGrid;
   end
   else if UpperCase(Key) = 'Z' then begin
     Mode := modePanZoom;
@@ -358,6 +382,20 @@ begin
       end;
     end;
     ShowCorners;
+
+  end
+  else if mode = modeStartingGrid then begin
+    ClickedCell := True;
+    aCell := GetCell( StrToInt(lstsprite[0].guid) );
+    case Button of
+      mbLeft: begin
+        aCell.StartingGrid := CnSpinEdit3.Value;
+      end;
+      mbRight: begin
+        aCell.StartingGrid := 0;
+      end;
+    end;
+    ShowStartingGrid;
 
   end;
 
@@ -513,6 +551,7 @@ procedure TForm1.StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var
 var
   aSprite : SE_Sprite;
   i: Integer;
+  ini: TInifile;
 begin
   Circuit.Clear;
 
@@ -533,8 +572,7 @@ begin
   Mode := modePanZoom;
   incGuid := 0;
   Panel4.Visible := False;
-  Panel3.Visible := True;
-//  LoadCircuit (StringGrid2.Cells[0,aRow])  ;
+  LoadCircuit (StringGrid2.Cells[0,aRow])  ;
 
 end;
 
@@ -646,5 +684,26 @@ begin
   end;
 
 end;
+procedure TForm1.ShowStartingGrid;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+    if Circuit[i].Corner <> 0 then begin
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clBlack;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clWhite;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
+      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].StartingGrid ));
+    end;
+  end;
+
+end;
 end.

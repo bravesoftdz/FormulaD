@@ -2,13 +2,19 @@ unit formulaDBrain;
 
 interface
 uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types;
+type TCircuitDescr = record
+  Corners: Byte;
+
+end;
+
 type TCell = Class
   public
   Guid : SmallInt;
-  Lane : Byte;
+  Lane : ShortInt; // -1 = box
   LinkForward : SE_IntegerList;
   Adjacent : SE_IntegerList;
   Corner : Byte;
+  StartingGrid : Byte;
   PixelX,PixelY : SmallInt;
   constructor Create;
   destructor Destroy;override;
