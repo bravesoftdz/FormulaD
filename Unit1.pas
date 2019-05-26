@@ -38,6 +38,7 @@ type
     Label5: TLabel;
     CnSpinEdit5: TCnSpinEdit;
     CnSpinEdit6: TCnSpinEdit;
+    SE_EngineZoom: SE_Engine;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -48,6 +49,7 @@ type
     procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
     procedure Button2Click(Sender: TObject);
     procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
+    procedure SE_Theater1MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
     fmode : TMode;
@@ -90,7 +92,8 @@ implementation
 procedure TForm1.Button1Click(Sender: TObject);
 var
   i,L,a,count: Integer;
-  TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
+  TotCells: SmallInt;
+  TotLinkForward, TotAdjacent, tmpb: Byte;
 begin
   { TODO : check corners e startinggrid ebox }
   mm.Clear;
@@ -132,10 +135,10 @@ end;
 procedure TForm1.LoadCircuit ( CircuitName: string );
 var
   ini : TIniFile;
-  tmpSmallInt: SmallInt;
+  TotCells,tmpSmallInt: SmallInt;
   i,L,a,count: Integer;
   aCell: TCell;
-  TotCells, TotLinkForward, TotAdjacent, tmpb: Byte;
+  TotLinkForward, TotAdjacent, tmpb: Byte;
   aBmp: SE_Bitmap;
   aSprite: SE_Sprite;
 begin
@@ -145,7 +148,8 @@ begin
   aBmp.Bitmap.Canvas.Ellipse(2,2,16,16);
 
   ini := TIniFile.Create( '..\server\circuits\' + CircuitName + '.ini' );
-  CircuitDescr.Corners := ini.ReadInteger('setup','corners',0);
+  CircuitDescr.Corners := ini.ReadInteger('setup','Corners',0);
+  CircuitDescr.CarAngle := ini.ReadInteger('setup','CarAngle',0);
   ini.Free;
 
   mm.LoadFromFile(  '..\server\circuits\' + CircuitName + '.fd' );
@@ -185,7 +189,13 @@ begin
   incGuid := TotCells ;
 
   aBmp.free;
+  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\2.bmp','cartest',1,1,1000,470 ,564,true );
+  aSprite.Scale := 32;  // quando zoommo scalo di nuovo il bmp, lo metto alle coordinate del render a video non virtual.
+  aSprite.Angle := CircuitDescr.CarAngle ;
 
+  aSprite := SE_EngineZoom.CreateSprite( '..\client\bmp\cars\2.bmp','cartest',1,1,1000, 470 ,564,true );
+  aSprite.Angle := CircuitDescr.CarAngle ;
+  aSprite.Visible := False;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
@@ -368,6 +378,25 @@ begin
   end;
 end;
 
+procedure TForm1.SE_Theater1MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+var
+  aSprite, aSpriteZoom: SE_Sprite;
+  visX,visY: integer;
+begin
+  if SE_Theater1.Zoom <> 0 then begin
+    aSprite := SE_Engine4.FindSprite( 'cartest' );
+    visX := SE_Theater1.XVirtualToVisible( aSprite.Position.X );
+    visY := SE_Theater1.YVirtualToVisible( aSprite.Position.Y );
+    aSpriteZoom := SE_EngineZoom.FindSprite( 'cartest' );
+//    aSprite.Scale :=
+     { TODO : fare calcolo in base alla % di partenza 30,34 % }
+    aSpriteZoom.Position := Point ( visX, visY);
+    aSpriteZoom.Visible := true;
+  end
+  else aSpriteZoom.Visible := False;
+
+end;
+
 procedure TForm1.SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;  Shift: TShiftState);
 var
   aCell: TCell;
@@ -400,10 +429,16 @@ begin
     ClickedCell := True;
     case Button of
       mbLeft: begin
-        if SelectedCell <> nil then AddLinkForward ( SelectedCell, lstSprite[0] );
+        if SelectedCell <> nil then begin
+          AddAdjacent ( SelectedCell, lstSprite[0] );     // prima colora di giallo
+          AddLinkForward ( SelectedCell, lstSprite[0] );  // poi colora di Verde
+        end;
       end;
       mbRight: begin
-        if SelectedCell <> nil then RemoveLinkForward ( SelectedCell, lstSprite[0] );
+        if SelectedCell <> nil then begin
+          RemoveLinkForward ( SelectedCell, lstSprite[0] );
+          RemoveAdjacent ( SelectedCell, lstSprite[0] );
+        end;
       end;
     end;
 
@@ -576,9 +611,10 @@ begin
   for i := Circuit.Count -1 downto 0 do begin
     if Circuit[i].Guid = aCell.Guid then begin
       Circuit.Delete(i);
-      Exit;
+      Break;
     end;
   end;
+  incGuid := Circuit.Count;
 
 end;
 procedure TForm1.DeleteCellCircuit ( aSprite : SE_Sprite );
@@ -658,6 +694,7 @@ begin
   for i := 0 to SE_Theater1.EngineCount -1 do begin
     SE_Theater1.Engines [i].RemoveAllSprites;
   end;
+  SelectedCell := nil;
 
   SE_Theater1.VirtualWidth := aSprite.BMP.Width;
   SE_Theater1.VirtualHeight := aSprite.BMP.Height;
@@ -671,7 +708,6 @@ begin
   PanelLoad.Visible := False;
   LoadCircuit ( JustNameL( StringGrid2.Cells[0,aRow]))  ;
   Mode := modePanZoom;
-
 end;
 
 procedure TForm1.ShowAdjacent ( MainSprite: SE_Sprite );

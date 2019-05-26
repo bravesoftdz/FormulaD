@@ -4,7 +4,7 @@ interface
 uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types;
 type TCircuitDescr = record
   Corners: Byte;
-
+  CarAngle: SmallInt;
 end;
 
 type TCell = Class

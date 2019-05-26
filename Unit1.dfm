@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 814
-  ClientWidth = 1102
+  ClientHeight = 862
+  ClientWidth = 1424
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -21,8 +21,8 @@ object Form1: TForm1
   object SE_Theater1: SE_Theater
     Left = 8
     Top = 8
-    Width = 825
-    Height = 729
+    Width = 1200
+    Height = 857
     MouseScrollRate = 1.000000000000000000
     MouseWheelInvert = False
     MouseWheelValue = 10
@@ -47,10 +47,11 @@ object Form1: TForm1
     OnTheaterMouseUp = SE_Theater1TheaterMouseUp
     VirtualWidth = 212
     Virtualheight = 212
+    OnMouseWheel = SE_Theater1MouseWheel
     TabOrder = 0
   end
   object Panel1: TPanel
-    Left = 839
+    Left = 1214
     Top = 8
     Width = 202
     Height = 65
@@ -81,7 +82,7 @@ object Form1: TForm1
     end
   end
   object Panel2: TPanel
-    Left = 839
+    Left = 1214
     Top = 79
     Width = 202
     Height = 66
@@ -112,7 +113,7 @@ object Form1: TForm1
     end
   end
   object Button1: TButton
-    Left = 947
+    Left = 1322
     Top = 711
     Width = 75
     Height = 25
@@ -121,7 +122,7 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object PanelLoad: TPanel
-    Left = 839
+    Left = 1214
     Top = 351
     Width = 202
     Height = 354
@@ -145,7 +146,7 @@ object Form1: TForm1
     end
   end
   object Button2: TButton
-    Left = 839
+    Left = 1214
     Top = 711
     Width = 75
     Height = 25
@@ -154,7 +155,7 @@ object Form1: TForm1
     OnClick = Button2Click
   end
   object Panel3: TPanel
-    Left = 839
+    Left = 1214
     Top = 151
     Width = 202
     Height = 66
@@ -185,7 +186,7 @@ object Form1: TForm1
     end
   end
   object Panel4: TPanel
-    Left = 839
+    Left = 1214
     Top = 223
     Width = 202
     Height = 58
@@ -216,7 +217,7 @@ object Form1: TForm1
     end
   end
   object Panel5: TPanel
-    Left = 839
+    Left = 1214
     Top = 287
     Width = 202
     Height = 58
@@ -268,8 +269,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 0
     Theater = SE_Theater1
-    Left = 424
-    Top = 744
+    Left = 1231
+    Top = 760
   end
   object SE_Engine2: SE_Engine
     PixelClick = True
@@ -277,8 +278,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 1
     Theater = SE_Theater1
-    Left = 472
-    Top = 744
+    Left = 1279
+    Top = 760
   end
   object SE_Engine3: SE_Engine
     ClickSprites = False
@@ -287,8 +288,8 @@ object Form1: TForm1
     Priority = 0
     Theater = SE_Theater1
     RenderBitmap = VisibleRender
-    Left = 528
-    Top = 744
+    Left = 1335
+    Top = 760
   end
   object SE_Engine4: SE_Engine
     PixelClick = True
@@ -296,12 +297,21 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 2
     Theater = SE_Theater1
-    Left = 576
-    Top = 744
+    Left = 1383
+    Top = 760
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
-    Left = 640
-    Top = 736
+    Left = 1319
+    Top = 816
+  end
+  object SE_EngineZoom: SE_Engine
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 0
+    Theater = SE_Theater1
+    RenderBitmap = VisibleRender
+    Left = 1231
+    Top = 808
   end
 end
