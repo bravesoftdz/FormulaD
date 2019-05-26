@@ -97,7 +97,7 @@ begin
 
   TotCells := Circuit.Count;
   mm.Write( @TotCells, sizeof(SmallInt) );
-  for I := Circuit.Count -1 Downto 0 do begin
+  for I :=  0 to Circuit.Count -1 do begin
     mm.Write( @Circuit[i].Guid , SizeOf(SmallInt));
     mm.Write( @Circuit[i].Lane , SizeOf(ShortInt));
     mm.Write( @Circuit[i].Corner , SizeOf(Byte));
