@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 764
+  ClientHeight = 814
   ClientWidth = 1102
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -22,7 +22,7 @@ object Form1: TForm1
     Left = 8
     Top = 8
     Width = 825
-    Height = 689
+    Height = 729
     MouseScrollRate = 1.000000000000000000
     MouseWheelInvert = False
     MouseWheelValue = 10
@@ -52,24 +52,30 @@ object Form1: TForm1
   object Panel1: TPanel
     Left = 839
     Top = 8
-    Width = 185
+    Width = 202
     Height = 65
     TabOrder = 1
     Visible = False
     object Label1: TLabel
       Left = 8
-      Top = 8
+      Top = 26
       Width = 23
       Height = 13
       Caption = 'Lane'
     end
     object CnSpinEdit1: TCnSpinEdit
-      Left = 8
-      Top = 24
-      Width = 41
-      Height = 22
+      Left = 72
+      Top = 18
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
       MaxValue = 2
-      MinValue = -1
+      MinValue = -2
+      ParentFont = False
       TabOrder = 0
       Value = 0
     end
@@ -77,41 +83,47 @@ object Form1: TForm1
   object Panel2: TPanel
     Left = 839
     Top = 79
-    Width = 185
+    Width = 202
     Height = 66
     TabOrder = 2
     Visible = False
     object Label2: TLabel
-      Left = 8
-      Top = 9
+      Left = 9
+      Top = 16
       Width = 33
       Height = 13
       Caption = 'Corner'
     end
     object CnSpinEdit2: TCnSpinEdit
-      Left = 8
-      Top = 28
-      Width = 41
-      Height = 22
+      Left = 72
+      Top = 16
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
       MaxValue = 100
       MinValue = 0
+      ParentFont = False
       TabOrder = 0
       Value = 0
     end
   end
   object Button1: TButton
-    Left = 949
-    Top = 672
+    Left = 947
+    Top = 711
     Width = 75
     Height = 25
     Caption = 'Save'
     TabOrder = 3
     OnClick = Button1Click
   end
-  object Panel6: TPanel
+  object PanelLoad: TPanel
     Left = 839
-    Top = 295
-    Width = 185
+    Top = 351
+    Width = 202
     Height = 354
     TabOrder = 4
     Visible = False
@@ -134,7 +146,7 @@ object Form1: TForm1
   end
   object Button2: TButton
     Left = 839
-    Top = 672
+    Top = 711
     Width = 75
     Height = 25
     Caption = 'Load'
@@ -144,24 +156,30 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 839
     Top = 151
-    Width = 185
+    Width = 202
     Height = 66
     TabOrder = 6
     Visible = False
     object Label3: TLabel
       Left = 8
-      Top = 9
+      Top = 25
       Width = 60
       Height = 13
       Caption = 'Starting Grid'
     end
     object CnSpinEdit3: TCnSpinEdit
-      Left = 8
-      Top = 28
-      Width = 41
-      Height = 22
+      Left = 74
+      Top = 20
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
       MaxValue = 100
       MinValue = 0
+      ParentFont = False
       TabOrder = 0
       Value = 0
     end
@@ -169,26 +187,79 @@ object Form1: TForm1
   object Panel4: TPanel
     Left = 839
     Top = 223
-    Width = 185
-    Height = 66
+    Width = 202
+    Height = 58
     TabOrder = 7
     Visible = False
     object Label4: TLabel
-      Left = 8
-      Top = 9
+      Left = 16
+      Top = 17
       Width = 18
       Height = 13
       Caption = 'Box'
     end
     object CnSpinEdit4: TCnSpinEdit
-      Left = 8
-      Top = 28
-      Width = 41
-      Height = 22
-      MaxValue = 5
-      MinValue = 1
+      Left = 74
+      Top = 12
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      MaxValue = 100
+      MinValue = 0
+      ParentFont = False
       TabOrder = 0
-      Value = 1
+      Value = 0
+    end
+  end
+  object Panel5: TPanel
+    Left = 839
+    Top = 287
+    Width = 202
+    Height = 58
+    TabOrder = 8
+    Visible = False
+    object Label5: TLabel
+      Left = 16
+      Top = 17
+      Width = 41
+      Height = 13
+      Caption = 'Distance'
+    end
+    object CnSpinEdit5: TCnSpinEdit
+      Left = 74
+      Top = 12
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      MaxValue = 100
+      MinValue = 0
+      ParentFont = False
+      TabOrder = 0
+      Value = 0
+    end
+    object CnSpinEdit6: TCnSpinEdit
+      Left = 137
+      Top = 12
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      MaxValue = 100
+      MinValue = 0
+      ParentFont = False
+      TabOrder = 1
+      Value = 0
     end
   end
   object SE_Engine1: SE_Engine
@@ -197,8 +268,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 0
     Theater = SE_Theater1
-    Left = 448
-    Top = 704
+    Left = 424
+    Top = 744
   end
   object SE_Engine2: SE_Engine
     PixelClick = True
@@ -206,8 +277,8 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 1
     Theater = SE_Theater1
-    Left = 496
-    Top = 704
+    Left = 472
+    Top = 744
   end
   object SE_Engine3: SE_Engine
     ClickSprites = False
@@ -216,8 +287,8 @@ object Form1: TForm1
     Priority = 0
     Theater = SE_Theater1
     RenderBitmap = VisibleRender
-    Left = 552
-    Top = 704
+    Left = 528
+    Top = 744
   end
   object SE_Engine4: SE_Engine
     PixelClick = True
@@ -225,12 +296,12 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 2
     Theater = SE_Theater1
-    Left = 600
-    Top = 704
+    Left = 576
+    Top = 744
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
-    Left = 664
-    Top = 696
+    Left = 640
+    Top = 736
   end
 end

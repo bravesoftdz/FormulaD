@@ -1,7 +1,7 @@
 unit Unit1;
 
 interface
-
+     { TODO : fare blocchi di pista decrementali_ modedistance }
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.Generics.Defaults, System.Generics.Collections,
@@ -9,7 +9,7 @@ uses
   DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, System.IniFiles, Vcl.Grids;
 
 type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z},
-                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F} ) ;
+                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F},modeDistance{D} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
@@ -24,16 +24,20 @@ type
     Button1: TButton;
     Label2: TLabel;
     CnSpinEdit2: TCnSpinEdit;
-    Panel6: TPanel;
+    PanelLoad: TPanel;
     StringGrid2: TStringGrid;
     Button2: TButton;
     SE_SearchFiles1: SE_SearchFiles;
     Panel3: TPanel;
     Label3: TLabel;
-    CnSpinEdit3: TCnSpinEdit;
     Panel4: TPanel;
     Label4: TLabel;
+    CnSpinEdit3: TCnSpinEdit;
     CnSpinEdit4: TCnSpinEdit;
+    Panel5: TPanel;
+    Label5: TLabel;
+    CnSpinEdit5: TCnSpinEdit;
+    CnSpinEdit6: TCnSpinEdit;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -65,6 +69,7 @@ type
     procedure ShowStartingGrid;
     procedure ShowBox;
     procedure ShowfinishLine;
+    procedure ShowDistance;
     procedure LoadCircuit ( CircuitName: string );
     property Mode :Tmode read fmode write SetMode;
   end;
@@ -99,6 +104,8 @@ begin
     mm.Write( @Circuit[i].StartingGrid , SizeOf(Byte));
     mm.Write( @Circuit[i].Box , SizeOf(Byte));
     mm.Write( @Circuit[i].FinishLine , SizeOf(Boolean));
+    mm.Write( @Circuit[i].DistCorner , SizeOf(Byte));
+    mm.Write( @Circuit[i].DistStraight , SizeOf(Byte));
     mm.Write( @Circuit[i].PixelX , SizeOf(SmallInt));
     mm.Write( @Circuit[i].PixelY , SizeOf(SmallInt));
 
@@ -152,6 +159,8 @@ begin
     mm.Read( aCell.StartingGrid , SizeOf(Byte) );
     mm.Read( aCell.Box , SizeOf(Byte) );
     mm.Read( aCell.FinishLine , SizeOf(Boolean) );
+    mm.Read( aCell.DistCorner , SizeOf(Byte) );
+    mm.Read( aCell.DistStraight , SizeOf(Byte) );
     mm.Read( aCell.PixelX , SizeOf(SmallInt) );
     mm.Read( aCell.PixelY , SizeOf(SmallInt) );
       // load linkForward e Adjacent
@@ -173,10 +182,8 @@ begin
     aSprite.Position := Point (  aCell.PixelX , aCell.PixelY  );
 
   end;
-  incGuid := TotCells - 1;
-  Panel6.Visible := False;
+  incGuid := TotCells ;
 
-  SelectCell ( aSprite );
   aBmp.free;
 
 end;
@@ -200,7 +207,7 @@ begin
     StringGrid2.Cells[ 0, i] :=  SE_SearchFiles1.ListFiles[i];
   end;
 
-  Panel6.Visible := True;
+  PanelLoad.Visible := True;
 
 end;
 
@@ -216,6 +223,7 @@ begin
                   Panel2.Visible := false;
                   Panel3.Visible := false;
                   Panel4.Visible := false;
+                  Panel5.Visible := false;
 
   fmode := aMode;
   case aMode of
@@ -279,6 +287,12 @@ begin
                   ShowFinishLine;
                   aColor := clWhite;
                   aText := 'Set Finish Line';
+                 end;
+    modeDistance: begin
+                  Panel5.Visible := True;
+                  ShowDistance;
+                  aColor := clWhite;
+                  aText := 'Set Distance';
                  end;
   end;
 
@@ -345,6 +359,9 @@ begin
   end
   else if UpperCase(Key) = 'F' then begin
     Mode := modeFinishLine;
+  end
+  else if UpperCase(Key) = 'D' then begin
+    Mode := modeDistance;
   end
   else if UpperCase(Key) = 'Z' then begin
     Mode := modePanZoom;
@@ -445,7 +462,7 @@ begin
     ShowBox;
 
   end
-  else if mode = modefinishLine then begin
+  else if mode = modeFinishLine then begin
     ClickedCell := True;
     aCell := GetCell( StrToInt(lstsprite[0].guid) );
     case Button of
@@ -457,6 +474,24 @@ begin
       end;
     end;
     ShowFinishLine;
+
+  end
+  else if mode = modeDistance then begin
+    ClickedCell := True;
+    aCell := GetCell( StrToInt(lstsprite[0].guid) );
+    case Button of
+      mbLeft: begin
+        aCell.DistCorner := CnSpinEdit5.Value ;
+        aCell.DistStraight := CnSpinEdit6.Value ;
+        CnSpinEdit5.Value := CnSpinEdit5.Value + 1;
+        CnSpinEdit6.Value := CnSpinEdit6.Value + 1;
+      end;
+      mbRight: begin
+        aCell.DistCorner := 0 ;
+        aCell.DistStraight := 0 ;
+      end;
+    end;
+    ShowDistance;
 
   end;
 
@@ -555,9 +590,10 @@ begin
   for i := Circuit.Count -1 downto 0 do begin
     if Circuit[i].Guid =  StrToInt(aSprite.Guid) then begin
       Circuit.Delete(i);
-      Exit;
+      Break;
     end;
   end;
+  incGuid := Circuit.Count;
 
 end;
 procedure TForm1.SelectCell ( aSprite : SE_Sprite );
@@ -632,7 +668,7 @@ begin
 
   Mode := modePanZoom;
   incGuid := 0;
-  Panel4.Visible := False;
+  PanelLoad.Visible := False;
   LoadCircuit ( JustNameL( StringGrid2.Cells[0,aRow]))  ;
   Mode := modePanZoom;
 
@@ -714,6 +750,8 @@ var
   i: Integer;
 begin
   for I := 0 to SE_Engine2.SpriteCount -1 do begin
+    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Brush.color := clWhite;
+    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.FillRect( Rect(0,0,SE_Engine2.Sprites[i].bmp.Width,SE_Engine2.Sprites[i].bmp.Height) );
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Brush.color := clGray; // torna normale.
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
   end;
@@ -809,6 +847,26 @@ begin
 
       aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(  Integer(Circuit[i].FinishLine) ));
     end;
+  end;
+
+end;
+procedure TForm1.ShowDistance;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clBlack;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clWhite-1;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 6;
+      //aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+      aSprite.bmp.Bitmap.Canvas.TextOut( 0,2, IntToStr(Circuit[i].DistCorner)+ '-'+IntToStr(Circuit[i].DistStraight));
   end;
 
 end;

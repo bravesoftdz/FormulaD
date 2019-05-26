@@ -18,6 +18,8 @@ type TCell = Class
   Box : Byte;
   FinishLine : Boolean;
   PixelX,PixelY : SmallInt;
+  DistCorner : Byte;
+  DistStraight : Byte;
   constructor Create;
   destructor Destroy;override;
 end;
