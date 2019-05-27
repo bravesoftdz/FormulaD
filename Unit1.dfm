@@ -47,7 +47,6 @@ object Form1: TForm1
     OnTheaterMouseUp = SE_Theater1TheaterMouseUp
     VirtualWidth = 212
     Virtualheight = 212
-    OnMouseWheel = SE_Theater1MouseWheel
     TabOrder = 0
   end
   object Panel1: TPanel
@@ -304,14 +303,5 @@ object Form1: TForm1
     SubDirectories = True
     Left = 1319
     Top = 816
-  end
-  object SE_EngineZoom: SE_Engine
-    PixelCollision = False
-    IsoPriority = False
-    Priority = 0
-    Theater = SE_Theater1
-    RenderBitmap = VisibleRender
-    Left = 1231
-    Top = 808
   end
 end

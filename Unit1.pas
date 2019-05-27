@@ -38,7 +38,6 @@ type
     Label5: TLabel;
     CnSpinEdit5: TCnSpinEdit;
     CnSpinEdit6: TCnSpinEdit;
-    SE_EngineZoom: SE_Engine;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -49,7 +48,6 @@ type
     procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
     procedure Button2Click(Sender: TObject);
     procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
-    procedure SE_Theater1MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
     fmode : TMode;
@@ -189,13 +187,17 @@ begin
   incGuid := TotCells ;
 
   aBmp.free;
-  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\2.bmp','cartest',1,1,1000,470 ,564,true );
-  aSprite.Scale := 32;  // quando zoommo scalo di nuovo il bmp, lo metto alle coordinate del render a video non virtual.
+{  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\2.bmp','cartest2',1,1,1000,470 ,564,true );
+  aSprite.Scale := 32;
   aSprite.Angle := CircuitDescr.CarAngle ;
 
-  aSprite := SE_EngineZoom.CreateSprite( '..\client\bmp\cars\2.bmp','cartest',1,1,1000, 470 ,564,true );
+  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\1.bmp','cartest1',1,1,1000,410 ,568,true );
+  aSprite.Scale := 86;
   aSprite.Angle := CircuitDescr.CarAngle ;
-  aSprite.Visible := False;
+
+  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\3.bmp','cartest3',1,1,1000,350 ,568,true );
+  aSprite.Scale := 60;
+  aSprite.Angle := CircuitDescr.CarAngle ;   }
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
@@ -376,25 +378,6 @@ begin
   else if UpperCase(Key) = 'Z' then begin
     Mode := modePanZoom;
   end;
-end;
-
-procedure TForm1.SE_Theater1MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-var
-  aSprite, aSpriteZoom: SE_Sprite;
-  visX,visY: integer;
-begin
-  if SE_Theater1.Zoom <> 0 then begin
-    aSprite := SE_Engine4.FindSprite( 'cartest' );
-    visX := SE_Theater1.XVirtualToVisible( aSprite.Position.X );
-    visY := SE_Theater1.YVirtualToVisible( aSprite.Position.Y );
-    aSpriteZoom := SE_EngineZoom.FindSprite( 'cartest' );
-//    aSprite.Scale :=
-     { TODO : fare calcolo in base alla % di partenza 30,34 % }
-    aSpriteZoom.Position := Point ( visX, visY);
-    aSpriteZoom.Visible := true;
-  end
-  else aSpriteZoom.Visible := False;
-
 end;
 
 procedure TForm1.SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;  Shift: TShiftState);
