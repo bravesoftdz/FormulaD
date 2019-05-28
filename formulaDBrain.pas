@@ -1,7 +1,7 @@
 unit formulaDBrain;
 
 interface
-uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types;
+uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types, DSE_Theater;
 type TCircuitDescr = record
   Corners: Byte;
   CarAngle: SmallInt;
@@ -23,6 +23,11 @@ type TCell = Class
   constructor Create;
   destructor Destroy;override;
 end;
+type TCar = Class
+  Tire : ShortInt;
+  SE_Sprite : SE_Sprite;
+
+End;
 
 implementation
 constructor TCell.Create;

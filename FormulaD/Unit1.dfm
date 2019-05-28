@@ -16,8 +16,8 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object PanelMain: SE_Panel
-    Left = 458
-    Top = 228
+    Left = 509
+    Top = 60
     Width = 241
     Height = 125
     BevelOuter = bvNone
@@ -85,9 +85,9 @@ object Form1: TForm1
   end
   object PanelCreateGame: SE_Panel
     Left = 394
-    Top = 380
+    Top = 191
     Width = 503
-    Height = 429
+    Height = 530
     BevelOuter = bvNone
     Color = 8081721
     ParentBackground = False
@@ -137,7 +137,7 @@ object Form1: TForm1
     end
     object lblHumanPlayers: TLabel
       Left = 8
-      Top = 156
+      Top = 100
       Width = 97
       Height = 16
       AutoSize = False
@@ -151,7 +151,7 @@ object Form1: TForm1
     end
     object lblCPU: TLabel
       Left = 329
-      Top = 156
+      Top = 100
       Width = 97
       Height = 16
       Alignment = taRightJustify
@@ -180,8 +180,8 @@ object Form1: TForm1
       ParentFont = False
     end
     object btnStartGame: TCnSpeedButton
-      Left = 115
-      Top = 393
+      Left = 123
+      Top = 481
       Width = 233
       Height = 32
       Cursor = crHandPoint
@@ -279,7 +279,7 @@ object Form1: TForm1
     end
     object cbHumanPlayers: TComboBox
       Left = 128
-      Top = 152
+      Top = 96
       Width = 49
       Height = 22
       BevelEdges = []
@@ -301,7 +301,7 @@ object Form1: TForm1
     end
     object cbCPU: TComboBox
       Left = 432
-      Top = 152
+      Top = 96
       Width = 49
       Height = 22
       BevelEdges = []
@@ -323,7 +323,7 @@ object Form1: TForm1
     end
     object SE_GridHumanPlayers: SE_Grid
       Left = 8
-      Top = 180
+      Top = 124
       Width = 233
       Height = 101
       Cursor = crHandPoint
@@ -358,8 +358,8 @@ object Form1: TForm1
       Font.Style = []
     end
     object SE_GridCPU: SE_Grid
-      Left = 255
-      Top = 180
+      Left = 247
+      Top = 124
       Width = 233
       Height = 101
       Cursor = crHandPoint
@@ -431,7 +431,7 @@ object Form1: TForm1
     end
     object EdtPwd: TEdit
       Left = 8
-      Top = 352
+      Top = 440
       Width = 121
       Height = 21
       TabOrder = 8
@@ -439,7 +439,7 @@ object Form1: TForm1
     end
     object edtPort: TEdit
       Left = 256
-      Top = 352
+      Top = 440
       Width = 121
       Height = 21
       NumbersOnly = True

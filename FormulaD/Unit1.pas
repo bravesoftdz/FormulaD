@@ -58,6 +58,7 @@ type
 var
   Form1: TForm1;
   dir_bmpWheater, dir_Cars, dir_Circuits: string;
+  CarBmp : array[1..10] of SE_Bitmap;
 implementation
 
 {$R *.dfm}
@@ -99,7 +100,6 @@ end;
 procedure TForm1.RefreshPlayerCPU;
 var
   i: Integer;
-  bmp: SE_Bitmap;
 begin
 //  Refresh Grid e Tcp
 
@@ -119,18 +119,20 @@ begin
   end;
 
   SE_GridHumanPlayers.Height := 24 * StrtoInt (cbHumanPlayers.text) ;
+  if SE_GridHumanPlayers.Height <= 0 then
+     SE_GridHumanPlayers.Height :=1;
+
   SE_GridHumanPlayers.Width := 160+51;
 
   //----------------------------------------------------------------------
 
             // ----- Tcp refresh Grid players --------
-        bmp := SE_Bitmap.Create (dir_cars + '3.bmp');
         for I := 0 to Tcpserver.ClientCount -1 do begin
-          if i <= StrtoInt ( cbHumanPlayers.text ) then
+          if i <= StrtoInt ( cbHumanPlayers.text ) then begin
             SE_GridHumanPlayers.Cells[1,i+1].Text := Tcpserver.Client[i].UserName;
-            SE_GridHumanPlayers.AddSE_Bitmap(0,i,1, bmp,true);
+            SE_GridHumanPlayers.AddSE_Bitmap(0,i,1, CarBmp[i+1] ,true);
+          end;
         end;
-        bmp.Free;
 
             // ---------------------------------------
 
@@ -144,15 +146,16 @@ begin
   SE_GridCPU.Columns[1].Width := 160;
 
 
-  bmp := SE_Bitmap.Create (dir_cars + '3.bmp');
   for I := 0 to StrtoInt (cbCPU.text) -1 do begin
     SE_GridCPU.Rows[i].Height := 24;
     SE_GridCPU.Cells[1,i].Text  := 'CPU' + IntToStr(i+1) ;
-    SE_GridCPU.AddSE_Bitmap(0,i,1,bmp,true);
+    SE_GridCPU.AddSE_Bitmap(0,i,1,CarBmp[i+1],true);
   end;
-        bmp.Free;
 
   SE_GridCPU.Height := 24 * StrtoInt (cbCPU.text) ;
+  if SE_GridCPU.Height <= 0 then
+     SE_GridCPU.Height :=1;
+
   SE_GridCPU.Width := 160+51;
 
   //----------------------------------------------------------------------
@@ -199,6 +202,17 @@ begin
     cbCPU.Items.add ( IntTostr(i));
   end;
   cbCPU.ItemIndex := 9;
+
+  CarBmp[1] := SE_Bitmap.Create ( dir_Cars + '1.bmp');
+  CarBmp[2] := SE_Bitmap.Create ( dir_Cars + '1.bmp');
+  CarBmp[3] := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[4] := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[5] := SE_Bitmap.Create ( dir_Cars + '5.bmp');
+  CarBmp[6] := SE_Bitmap.Create ( dir_Cars + '5.bmp');
+  CarBmp[7] := SE_Bitmap.Create ( dir_Cars + '7.bmp');
+  CarBmp[8] := SE_Bitmap.Create ( dir_Cars + '7.bmp');
+  CarBmp[9] := SE_Bitmap.Create ( dir_Cars + '9.bmp');
+  CarBmp[10] := SE_Bitmap.Create ( dir_Cars + '9.bmp');
 
 end;
 procedure TForm1.ResetSetupWheater;
