@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls, DSE_Panel, Vcl.StdCtrls,
-  DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles ;
+  DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles, OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS,
+  OverbyteIcsWSocketTS ;
 
 type
   TForm1 = class(TForm)
@@ -27,18 +28,33 @@ type
     lblCPU: TLabel;
     SE_GridHumanPlayers: SE_Grid;
     SE_GridCPU: SE_Grid;
+    lblQual: TLabel;
+    SE_GridQual: SE_Grid;
+    Tcpserver: TWSocketThrdServer;
+    EdtPwd: TEdit;
+    edtPort: TEdit;
+    btnStartGame: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
       Sprite: SE_Sprite);
+    procedure SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure cbHumanPlayersCloseUp(Sender: TObject);
+    procedure cbCPUCloseUp(Sender: TObject);
+    procedure btnStartGameClick(Sender: TObject);
   private
     { Private declarations }
+    procedure RefreshPlayerCPU;
     procedure ResetSetupWheater;
     procedure SelectSetupWheater ( Col : Integer );
+    procedure ResetSetupQual;
+    procedure SelectSetupQual ( Col : Integer );
   public
     { Public declarations }
   end;
 
+  const EndofLine = 'ENDFD';
 var
   Form1: TForm1;
   dir_bmpWheater, dir_Cars, dir_Circuits: string;
@@ -49,8 +65,104 @@ implementation
 procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
   SelectSetupWheater (4);
+  SelectSetupQual (1);
+  TcpServer.Port :=  edtPort.Text ;
+  TcpServer.LineMode            := true;
+  TcpServer.LineEdit            := false;
+  TcpServer.LineEnd             := EndOfLine;
+  TcpServer.LineLimit           := 1024;
+  TcpServer.Addr                := '0.0.0.0';
+  TcpServer.MaxClients          := StrToInt(cbHumanPlayers.text);
+  TcpServer.Listen ;
+
+
 end;
 
+procedure TForm1.btnStartGameClick(Sender: TObject);
+begin
+// quando tutti sono connessi
+end;
+
+procedure TForm1.cbCPUCloseUp(Sender: TObject);
+begin
+  cbHumanPlayers.ItemIndex := ( 10 -  StrToInt(cbCPU.Text) ) ;
+  RefreshPlayerCPU;
+
+end;
+
+procedure TForm1.cbHumanPlayersCloseUp(Sender: TObject);
+begin
+  cbCPU.ItemIndex := ( 10 -  StrToInt(cbHumanPlayers.Text) ) ;
+  RefreshPlayerCPU;
+
+end;
+procedure TForm1.RefreshPlayerCPU;
+var
+  i: Integer;
+  bmp: SE_Bitmap;
+begin
+//  Refresh Grid e Tcp
+
+  // Grid HumanPlayers ----------------------------------------------------
+  SE_GridHumanPlayers.ClearData;   // importante anche pr memoryleak
+  SE_GridHumanPlayers.DefaultColWidth := 51;
+  SE_GridHumanPlayers.DefaultRowHeight := 24;
+  SE_GridHumanPlayers.ColCount := 2;
+  SE_GridHumanPlayers.RowCount := StrtoInt ( cbHumanPlayers.text );
+  SE_GridHumanPlayers.Columns[0].Width := 51;
+  SE_GridHumanPlayers.Columns[1].Width := 160;
+
+
+  for I := 0 to StrtoInt (cbHumanPlayers.text) -1 do begin
+    SE_GridHumanPlayers.Rows[i].Height := 24;
+    SE_GridHumanPlayers.Cells[1,i].Text  := 'Waiting for Tcp connection';
+  end;
+
+  SE_GridHumanPlayers.Height := 24 * StrtoInt (cbHumanPlayers.text) ;
+  SE_GridHumanPlayers.Width := 160+51;
+
+  //----------------------------------------------------------------------
+
+            // ----- Tcp refresh Grid players --------
+        bmp := SE_Bitmap.Create (dir_cars + '3.bmp');
+        for I := 0 to Tcpserver.ClientCount -1 do begin
+          if i <= StrtoInt ( cbHumanPlayers.text ) then
+            SE_GridHumanPlayers.Cells[1,i+1].Text := Tcpserver.Client[i].UserName;
+            SE_GridHumanPlayers.AddSE_Bitmap(0,i,1, bmp,true);
+        end;
+        bmp.Free;
+
+            // ---------------------------------------
+
+  // Grid CPU ----------------------------------------------------
+  SE_GridCPU.ClearData;   // importante anche pr memoryleak
+  SE_GridCPU.DefaultColWidth := 51;
+  SE_GridCPU.DefaultRowHeight := 24;
+  SE_GridCPU.ColCount := 2;
+  SE_GridCPU.RowCount := StrtoInt ( cbCPU.text );
+  SE_GridCPU.Columns[0].Width := 51;
+  SE_GridCPU.Columns[1].Width := 160;
+
+
+  bmp := SE_Bitmap.Create (dir_cars + '3.bmp');
+  for I := 0 to StrtoInt (cbCPU.text) -1 do begin
+    SE_GridCPU.Rows[i].Height := 24;
+    SE_GridCPU.Cells[1,i].Text  := 'CPU' + IntToStr(i+1) ;
+    SE_GridCPU.AddSE_Bitmap(0,i,1,bmp,true);
+  end;
+        bmp.Free;
+
+  SE_GridCPU.Height := 24 * StrtoInt (cbCPU.text) ;
+  SE_GridCPU.Width := 160+51;
+
+  //----------------------------------------------------------------------
+
+  SE_GridHumanPlayers.CellsEngine.ProcessSprites(20);
+  SE_GridHumanPlayers.RefreshSurface ( SE_GridHumanPlayers );
+  SE_GridCPU.CellsEngine.ProcessSprites(20);
+  SE_GridCPU.RefreshSurface ( SE_GridCPU );
+
+end;
 procedure TForm1.FormCreate(Sender: TObject);
 var
   i: Integer;
@@ -79,14 +191,14 @@ begin
   cbLaps.Items.Add('3');
   cbLaps.ItemIndex := 0;
 
-  for I := 1 to 10 do begin
+  for I := 0 to 10 do begin
     cbHumanPlayers.Items.add ( IntTostr(i));
   end;
-  cbHumanPlayers.ItemIndex := 0;
-  for I := 1 to 10 do begin
+  cbHumanPlayers.ItemIndex := 1;
+  for I := 0 to 10 do begin
     cbCPU.Items.add ( IntTostr(i));
   end;
-  cbCPU.ItemIndex := 8;
+  cbCPU.ItemIndex := 9;
 
 end;
 procedure TForm1.ResetSetupWheater;
@@ -149,6 +261,54 @@ begin
   SE_GridWheater.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
   SE_GridWheater.CellsEngine.ProcessSprites(20);
   SE_GridWheater.RefreshSurface ( SE_GridWheater );
+end;
+procedure TForm1.ResetSetupQual;
+var
+  bmp : SE_bitmap;
+begin
+  SE_GridQual.ClearData;   // importante anche pr memoryleak
+  SE_GridQual.DefaultColWidth := 51;
+  SE_GridQual.DefaultRowHeight := 24;
+  SE_GridQual.ColCount := 2;
+  SE_GridQual.RowCount := 1;
+  SE_GridQual.Columns[0].Width := 51;
+  SE_GridQual.Columns[1].Width := 51;
+  SE_GridQual.Rows[0].Height := 24;
+
+  SE_GridQual.Height := 24;
+  SE_GridQual.Width := 51*2;
+
+
+  bmp := SE_bitmap.Create ( dir_bmpWheater + 't.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridQual.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  bmp.Free;
+
+  bmp := SE_bitmap.Create ( dir_bmpWheater + 'r.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridQual.AddSE_Bitmap ( 1, 0, 1 , bmp, false );
+  bmp.Free;
+
+  SE_GridQual.CellsEngine.ProcessSprites(20);
+  SE_GridQual.RefreshSurface ( SE_GridQual );
+
+end;
+procedure TForm1.SelectSetupQual ( Col : integer);
+begin
+  ResetSetupQual;
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,23);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,23);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
+  SE_GridQual.CellsEngine.ProcessSprites(20);
+  SE_GridQual.RefreshSurface ( SE_GridQual );
+end;
+
+procedure TForm1.SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+begin
+  SelectSetupQual ( CellX );
 end;
 
 procedure TForm1.SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;  Sprite: SE_Sprite);

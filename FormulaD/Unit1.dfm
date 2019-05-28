@@ -108,7 +108,7 @@ object Form1: TForm1
     end
     object lblLap: TLabel
       Left = 368
-      Top = 16
+      Top = 60
       Width = 58
       Height = 16
       Alignment = taRightJustify
@@ -137,7 +137,7 @@ object Form1: TForm1
     end
     object lblHumanPlayers: TLabel
       Left = 8
-      Top = 100
+      Top = 156
       Width = 97
       Height = 16
       AutoSize = False
@@ -151,7 +151,7 @@ object Form1: TForm1
     end
     object lblCPU: TLabel
       Left = 329
-      Top = 100
+      Top = 156
       Width = 97
       Height = 16
       Alignment = taRightJustify
@@ -163,6 +163,42 @@ object Form1: TForm1
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
+    end
+    object lblQual: TLabel
+      Left = 289
+      Top = 16
+      Width = 89
+      Height = 16
+      Alignment = taRightJustify
+      AutoSize = False
+      Caption = 'Qualifications:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clYellow
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object btnStartGame: TCnSpeedButton
+      Left = 115
+      Top = 393
+      Width = 233
+      Height = 32
+      Cursor = crHandPoint
+      Color = clGray
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = 'Start'
+      Enabled = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = 4308735
+      Font.Height = -21
+      Font.Name = 'Calibri'
+      Font.Style = [fsBold]
+      Margin = 4
+      ParentFont = False
+      OnClick = btnStartGameClick
     end
     object cbCircuit: TComboBox
       Left = 64
@@ -186,7 +222,7 @@ object Form1: TForm1
     end
     object cbLaps: TComboBox
       Left = 440
-      Top = 13
+      Top = 57
       Width = 41
       Height = 22
       BevelEdges = []
@@ -243,7 +279,7 @@ object Form1: TForm1
     end
     object cbHumanPlayers: TComboBox
       Left = 128
-      Top = 96
+      Top = 152
       Width = 49
       Height = 22
       BevelEdges = []
@@ -257,14 +293,15 @@ object Form1: TForm1
       Font.Height = -13
       Font.Name = 'Tahoma'
       Font.Style = []
-      MaxLength = 1
+      MaxLength = 2
       ParentCtl3D = False
       ParentFont = False
       TabOrder = 3
+      OnCloseUp = cbHumanPlayersCloseUp
     end
     object cbCPU: TComboBox
       Left = 432
-      Top = 96
+      Top = 152
       Width = 49
       Height = 22
       BevelEdges = []
@@ -278,14 +315,15 @@ object Form1: TForm1
       Font.Height = -13
       Font.Name = 'Tahoma'
       Font.Style = []
-      MaxLength = 1
+      MaxLength = 2
       ParentCtl3D = False
       ParentFont = False
       TabOrder = 4
+      OnCloseUp = cbCPUCloseUp
     end
     object SE_GridHumanPlayers: SE_Grid
       Left = 8
-      Top = 124
+      Top = 180
       Width = 233
       Height = 101
       Cursor = crHandPoint
@@ -295,7 +333,7 @@ object Form1: TForm1
       MouseWheelZoom = False
       MousePan = False
       MouseScroll = False
-      BackColor = clBlack
+      BackColor = 8081721
       AnimationInterval = 20
       GridInfoCell = False
       GridVisible = False
@@ -321,7 +359,7 @@ object Form1: TForm1
     end
     object SE_GridCPU: SE_Grid
       Left = 255
-      Top = 124
+      Top = 180
       Width = 233
       Height = 101
       Cursor = crHandPoint
@@ -331,7 +369,7 @@ object Form1: TForm1
       MouseWheelZoom = False
       MousePan = False
       MouseScroll = False
-      BackColor = clBlack
+      BackColor = 8081721
       AnimationInterval = 20
       GridInfoCell = False
       GridVisible = False
@@ -355,10 +393,80 @@ object Form1: TForm1
       Font.Name = 'Tahoma'
       Font.Style = []
     end
+    object SE_GridQual: SE_Grid
+      Left = 384
+      Top = 14
+      Width = 102
+      Height = 24
+      Cursor = crHandPoint
+      MouseScrollRate = 1.000000000000000000
+      MouseWheelInvert = False
+      MouseWheelValue = 10
+      MouseWheelZoom = False
+      MousePan = False
+      MouseScroll = False
+      BackColor = clBlack
+      AnimationInterval = 20
+      GridInfoCell = False
+      GridVisible = False
+      GridColor = clSilver
+      GridCellWidth = 40
+      GridCellHeight = 30
+      GridCellsX = 10
+      GridCellsY = 4
+      GridHexSmallWidth = 10
+      CollisionDelay = 0
+      ShowPerformance = False
+      VirtualWidth = 212
+      Virtualheight = 212
+      Passive = True
+      TabOrder = 7
+      OnGridCellMouseDown = SE_GridQualGridCellMouseDown
+      CellBorder = CellBorderNone
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+    end
+    object EdtPwd: TEdit
+      Left = 8
+      Top = 352
+      Width = 121
+      Height = 21
+      TabOrder = 8
+      Text = 'Password!'
+    end
+    object edtPort: TEdit
+      Left = 256
+      Top = 352
+      Width = 121
+      Height = 21
+      NumbersOnly = True
+      TabOrder = 9
+      Text = '2019'
+    end
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
     Left = 272
     Top = 616
+  end
+  object Tcpserver: TWSocketThrdServer
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    SocketErrs = wsErrTech
+    MultiListenSockets = <>
+    ClientsPerThread = 1
+    Left = 264
+    Top = 672
+    Banner = ''
   end
 end
