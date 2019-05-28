@@ -209,7 +209,7 @@ var
   i: Integer;
 begin
 
-  SE_SearchFiles1.FromPath :=  (dir_circuits );
+  SE_SearchFiles1.FromPath :=  ( dir_circuits );
   SE_SearchFiles1.MaskInclude.Add(  '*.ini');
   SE_SearchFiles1.Execute;
 
@@ -220,7 +220,7 @@ begin
   StringGrid2.RowCount := SE_SearchFiles1.ListFiles.count ;
 
   for I := 0 to SE_SearchFiles1.ListFiles.Count -1 do begin
-    StringGrid2.Cells[ 0, i] :=  SE_SearchFiles1.ListFiles[i];
+    StringGrid2.Cells[ 0, i] :=  JustNameL (SE_SearchFiles1.ListFiles[i]);
   end;
 
   PanelLoad.Visible := True;
