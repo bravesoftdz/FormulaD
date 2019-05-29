@@ -150,9 +150,9 @@ object Form1: TForm1
       ParentFont = False
     end
     object lblCPU: TLabel
-      Left = 329
-      Top = 100
-      Width = 97
+      Left = 238
+      Top = 102
+      Width = 26
       Height = 16
       Alignment = taRightJustify
       AutoSize = False
@@ -199,6 +199,20 @@ object Form1: TForm1
       Margin = 4
       ParentFont = False
       OnClick = btnStartGameClick
+    end
+    object lblCarSetup: TLabel
+      Left = 376
+      Top = 308
+      Width = 97
+      Height = 16
+      AutoSize = False
+      Caption = 'Car Setup:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clYellow
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
     end
     object cbCircuit: TComboBox
       Left = 64
@@ -278,7 +292,7 @@ object Form1: TForm1
       Font.Style = []
     end
     object cbHumanPlayers: TComboBox
-      Left = 128
+      Left = 111
       Top = 96
       Width = 49
       Height = 22
@@ -300,7 +314,7 @@ object Form1: TForm1
       OnCloseUp = cbHumanPlayersCloseUp
     end
     object cbCPU: TComboBox
-      Left = 432
+      Left = 270
       Top = 96
       Width = 49
       Height = 22
@@ -321,10 +335,10 @@ object Form1: TForm1
       TabOrder = 4
       OnCloseUp = cbCPUCloseUp
     end
-    object SE_GridHumanPlayers: SE_Grid
+    object SE_GridSetupPlayers: SE_Grid
       Left = 8
       Top = 124
-      Width = 233
+      Width = 313
       Height = 101
       Cursor = crHandPoint
       MouseScrollRate = 1.000000000000000000
@@ -349,43 +363,7 @@ object Form1: TForm1
       Virtualheight = 212
       Passive = True
       TabOrder = 5
-      OnGridCellMouseDown = SE_GridWheaterGridCellMouseDown
-      CellBorder = CellBorderNone
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = []
-    end
-    object SE_GridCPU: SE_Grid
-      Left = 247
-      Top = 124
-      Width = 233
-      Height = 101
-      Cursor = crHandPoint
-      MouseScrollRate = 1.000000000000000000
-      MouseWheelInvert = False
-      MouseWheelValue = 10
-      MouseWheelZoom = False
-      MousePan = False
-      MouseScroll = False
-      BackColor = 8081721
-      AnimationInterval = 20
-      GridInfoCell = False
-      GridVisible = False
-      GridColor = clSilver
-      GridCellWidth = 40
-      GridCellHeight = 30
-      GridCellsX = 10
-      GridCellsY = 4
-      GridHexSmallWidth = 10
-      CollisionDelay = 0
-      ShowPerformance = False
-      VirtualWidth = 212
-      Virtualheight = 212
-      Passive = True
-      TabOrder = 6
-      OnGridCellMouseDown = SE_GridWheaterGridCellMouseDown
+      OnGridCellMouseDown = SE_GridSetupPlayersGridCellMouseDown
       CellBorder = CellBorderNone
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -420,7 +398,7 @@ object Form1: TForm1
       VirtualWidth = 212
       Virtualheight = 212
       Passive = True
-      TabOrder = 7
+      TabOrder = 6
       OnGridCellMouseDown = SE_GridQualGridCellMouseDown
       CellBorder = CellBorderNone
       Font.Charset = DEFAULT_CHARSET
@@ -434,7 +412,7 @@ object Form1: TForm1
       Top = 440
       Width = 121
       Height = 21
-      TabOrder = 8
+      TabOrder = 7
       Text = 'Password!'
     end
     object edtPort: TEdit
@@ -443,8 +421,45 @@ object Form1: TForm1
       Width = 121
       Height = 21
       NumbersOnly = True
-      TabOrder = 9
+      TabOrder = 8
       Text = '2019'
+    end
+    object SE_GridCarColor: SE_Grid
+      Left = 399
+      Top = 124
+      Width = 82
+      Height = 101
+      Cursor = crHandPoint
+      MouseScrollRate = 1.000000000000000000
+      MouseWheelInvert = False
+      MouseWheelValue = 10
+      MouseWheelZoom = False
+      MousePan = False
+      MouseScroll = False
+      BackColor = 8081721
+      AnimationInterval = 20
+      GridInfoCell = False
+      GridVisible = False
+      GridColor = clSilver
+      GridCellWidth = 40
+      GridCellHeight = 30
+      GridCellsX = 10
+      GridCellsY = 4
+      GridHexSmallWidth = 10
+      CollisionDelay = 0
+      ShowPerformance = False
+      VirtualWidth = 212
+      Virtualheight = 212
+      Passive = True
+      Visible = False
+      TabOrder = 9
+      OnGridCellMouseDown = SE_GridCarColorGridCellMouseDown
+      CellBorder = CellBorderNone
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
     end
   end
   object SE_SearchFiles1: SE_SearchFiles

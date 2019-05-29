@@ -7,7 +7,11 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls, DSE_Panel, Vcl.StdCtrls,
   DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles, OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS,
   OverbyteIcsWSocketTS ;
-
+type TCarBmp = record
+  bmp : SE_Bitmap;
+  PosGrid : Integer;
+end;
+type pTCarBmp = ^TCarBmp;
 type
   TForm1 = class(TForm)
     PanelMain: SE_Panel;
@@ -26,14 +30,15 @@ type
     SE_SearchFiles1: SE_SearchFiles;
     cbCPU: TComboBox;
     lblCPU: TLabel;
-    SE_GridHumanPlayers: SE_Grid;
-    SE_GridCPU: SE_Grid;
+    SE_GridSetupPlayers: SE_Grid;
     lblQual: TLabel;
     SE_GridQual: SE_Grid;
     Tcpserver: TWSocketThrdServer;
     EdtPwd: TEdit;
     edtPort: TEdit;
     btnStartGame: TCnSpeedButton;
+    lblCarSetup: TLabel;
+    SE_GridCarColor: SE_Grid;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
@@ -43,6 +48,10 @@ type
     procedure cbHumanPlayersCloseUp(Sender: TObject);
     procedure cbCPUCloseUp(Sender: TObject);
     procedure btnStartGameClick(Sender: TObject);
+    procedure SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -50,6 +59,8 @@ type
     procedure SelectSetupWheater ( Col : Integer );
     procedure ResetSetupQual;
     procedure SelectSetupQual ( Col : Integer );
+    procedure ResetCarColor;
+    function FindCarBmpPos ( Pos : Integer ): pTCarBmp;
   public
     { Public declarations }
   end;
@@ -58,7 +69,8 @@ type
 var
   Form1: TForm1;
   dir_bmpWheater, dir_Cars, dir_Circuits: string;
-  CarBmp : array[1..10] of SE_Bitmap;
+  CarBmp : array[1..10] of TCarBmp;
+  RowPlayer: Integer; // per il cambio di colore
 implementation
 
 {$R *.dfm}
@@ -76,6 +88,7 @@ begin
   TcpServer.MaxClients          := StrToInt(cbHumanPlayers.text);
   TcpServer.Listen ;
 
+  RefreshPlayerCPU;
 
 end;
 
@@ -85,85 +98,91 @@ begin
 end;
 
 procedure TForm1.cbCPUCloseUp(Sender: TObject);
+var
+  i: Integer;
 begin
-  cbHumanPlayers.ItemIndex := ( 10 -  StrToInt(cbCPU.Text) ) ;
+  if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
+    cbHumanPlayers.ItemIndex := ( 10 -  StrToInt(cbCPU.Text) ) ;
+
   RefreshPlayerCPU;
 
 end;
 
 procedure TForm1.cbHumanPlayersCloseUp(Sender: TObject);
+var
+  i: Integer;
 begin
-  cbCPU.ItemIndex := ( 10 -  StrToInt(cbHumanPlayers.Text) ) ;
-  RefreshPlayerCPU;
+  if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
+    cbCPU.ItemIndex := ( 10 -  StrToInt(cbHumanPlayers.Text) ) ;
+
+    RefreshPlayerCPU;
 
 end;
 procedure TForm1.RefreshPlayerCPU;
 var
-  i: Integer;
+  i,TotRow: Integer;
+  aCarBmp: pTCarBmp;
 begin
 //  Refresh Grid e Tcp
 
-  // Grid HumanPlayers ----------------------------------------------------
-  SE_GridHumanPlayers.ClearData;   // importante anche pr memoryleak
-  SE_GridHumanPlayers.DefaultColWidth := 51;
-  SE_GridHumanPlayers.DefaultRowHeight := 24;
-  SE_GridHumanPlayers.ColCount := 2;
-  SE_GridHumanPlayers.RowCount := StrtoInt ( cbHumanPlayers.text );
-  SE_GridHumanPlayers.Columns[0].Width := 51;
-  SE_GridHumanPlayers.Columns[1].Width := 160;
-
-
-  for I := 0 to StrtoInt (cbHumanPlayers.text) -1 do begin
-    SE_GridHumanPlayers.Rows[i].Height := 24;
-    SE_GridHumanPlayers.Cells[1,i].Text  := 'Waiting for Tcp connection';
+  TotRow := StrtoInt ( cbHumanPlayers.text ) + StrtoInt ( cbCPU.text ) ;
+  for I := High (CarBmp) downto TotRow  do begin
+    aCarBmp:= FindCarbmpPos ( i );
+    if aCarBmp <> nil then
+       aCarBmp.PosGrid := -1;
   end;
 
-  SE_GridHumanPlayers.Height := 24 * StrtoInt (cbHumanPlayers.text) ;
-  if SE_GridHumanPlayers.Height <= 0 then
-     SE_GridHumanPlayers.Height :=1;
+  // Grid HumanPlayers ----------------------------------------------------
+  SE_GridSetupPlayers.ClearData;   // importante anche pr memoryleak
+  SE_GridSetupPlayers.DefaultColWidth := 51;
+  SE_GridSetupPlayers.DefaultRowHeight := 24;
+  SE_GridSetupPlayers.ColCount := 2;
+  SE_GridSetupPlayers.RowCount := TotRow;
+  SE_GridSetupPlayers.Columns[0].Width := 51;
+  SE_GridSetupPlayers.Columns[1].Width := 160;
 
-  SE_GridHumanPlayers.Width := 160+51;
+
+  for I := 0 to TotRow -1 do begin
+    SE_GridSetupPlayers.Rows[i].Height := 24;
+    SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;
+
+    if i < StrtoInt ( cbHumanPlayers.text )   then
+      SE_GridSetupPlayers.Cells[1,i].Text  := 'Waiting for Tcp connection'
+      else SE_GridSetupPlayers.Cells[1,i].Text  := 'CPU' + IntToStr(I+1);
+
+    aCarBmp:= FindCarbmpPos ( i );
+
+    if aCarBmp = nil then  begin                    // se ancora non è assegnata
+      aCarBmp:= FindCarbmpPos ( -1 );                           // cerco la prima libera con valore -1
+      aCarBmp.PosGrid := i;
+      SE_GridSetupPlayers.AddSE_Bitmap(0,i,1,aCarBmp.bmp ,true);
+    end
+    else begin
+      if aCarBmp.PosGrid > -1 then                                // se la car è già assegnata alla row
+        SE_GridSetupPlayers.AddSE_Bitmap(0,i,1,aCarBmp.bmp ,true)
+
+    end;
+  end;
+  SE_GridSetupPlayers.Height := 24 * TotRow ;
+  if SE_GridSetupPlayers.Height <= 0 then
+     SE_GridSetupPlayers.Height :=1;
+
+  SE_GridSetupPlayers.Width := 160+51;
 
   //----------------------------------------------------------------------
 
             // ----- Tcp refresh Grid players --------
         for I := 0 to Tcpserver.ClientCount -1 do begin
           if i <= StrtoInt ( cbHumanPlayers.text ) then begin
-            SE_GridHumanPlayers.Cells[1,i+1].Text := Tcpserver.Client[i].UserName;
-            SE_GridHumanPlayers.AddSE_Bitmap(0,i,1, CarBmp[i+1] ,true);
+            SE_GridSetupPlayers.Cells[1,i+1].Text := Tcpserver.Client[i].UserName;
           end;
         end;
 
             // ---------------------------------------
 
-  // Grid CPU ----------------------------------------------------
-  SE_GridCPU.ClearData;   // importante anche pr memoryleak
-  SE_GridCPU.DefaultColWidth := 51;
-  SE_GridCPU.DefaultRowHeight := 24;
-  SE_GridCPU.ColCount := 2;
-  SE_GridCPU.RowCount := StrtoInt ( cbCPU.text );
-  SE_GridCPU.Columns[0].Width := 51;
-  SE_GridCPU.Columns[1].Width := 160;
 
-
-  for I := 0 to StrtoInt (cbCPU.text) -1 do begin
-    SE_GridCPU.Rows[i].Height := 24;
-    SE_GridCPU.Cells[1,i].Text  := 'CPU' + IntToStr(i+1) ;
-    SE_GridCPU.AddSE_Bitmap(0,i,1,CarBmp[i+1],true);
-  end;
-
-  SE_GridCPU.Height := 24 * StrtoInt (cbCPU.text) ;
-  if SE_GridCPU.Height <= 0 then
-     SE_GridCPU.Height :=1;
-
-  SE_GridCPU.Width := 160+51;
-
-  //----------------------------------------------------------------------
-
-  SE_GridHumanPlayers.CellsEngine.ProcessSprites(20);
-  SE_GridHumanPlayers.RefreshSurface ( SE_GridHumanPlayers );
-  SE_GridCPU.CellsEngine.ProcessSprites(20);
-  SE_GridCPU.RefreshSurface ( SE_GridCPU );
+  SE_GridSetupPlayers.CellsEngine.ProcessSprites(20);
+  SE_GridSetupPlayers.RefreshSurface ( SE_GridSetupPlayers );
 
 end;
 procedure TForm1.FormCreate(Sender: TObject);
@@ -203,16 +222,23 @@ begin
   end;
   cbCPU.ItemIndex := 9;
 
-  CarBmp[1] := SE_Bitmap.Create ( dir_Cars + '1.bmp');
-  CarBmp[2] := SE_Bitmap.Create ( dir_Cars + '1.bmp');
-  CarBmp[3] := SE_Bitmap.Create ( dir_Cars + '3.bmp');
-  CarBmp[4] := SE_Bitmap.Create ( dir_Cars + '3.bmp');
-  CarBmp[5] := SE_Bitmap.Create ( dir_Cars + '5.bmp');
-  CarBmp[6] := SE_Bitmap.Create ( dir_Cars + '5.bmp');
-  CarBmp[7] := SE_Bitmap.Create ( dir_Cars + '7.bmp');
-  CarBmp[8] := SE_Bitmap.Create ( dir_Cars + '7.bmp');
-  CarBmp[9] := SE_Bitmap.Create ( dir_Cars + '9.bmp');
-  CarBmp[10] := SE_Bitmap.Create ( dir_Cars + '9.bmp');
+  CarBmp[1].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
+  CarBmp[2].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
+  CarBmp[3].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[4].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[5].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
+  CarBmp[6].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
+  CarBmp[7].bmp := SE_Bitmap.Create ( dir_Cars + '7.bmp');
+  CarBmp[8].bmp := SE_Bitmap.Create ( dir_Cars + '7.bmp');
+  CarBmp[9].bmp := SE_Bitmap.Create ( dir_Cars + '9.bmp');
+  CarBmp[10].bmp := SE_Bitmap.Create ( dir_Cars + '9.bmp');
+
+  for I := Low (CarBmp) to High (CarBmp) do begin
+    CarBmp[i].PosGrid := -1;
+  end;
+
+  CarBmp[1].PosGrid := 0;
+  ResetCarColor;
 
 end;
 procedure TForm1.ResetSetupWheater;
@@ -320,14 +346,110 @@ begin
   SE_GridQual.RefreshSurface ( SE_GridQual );
 end;
 
+procedure TForm1.SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  ACarBmp : pTCarBmp;
+begin
+  // qui c'è il PickCar
+  SE_GridCarColor.Visible := False;
+
+  case CellY of
+    0: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[1].bmp;
+    1: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[3].bmp;
+    2: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[5].bmp;
+    3: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[7].bmp;
+    4: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[9].bmp;
+  end;
+
+  SE_GridSetupPlayers.RefreshSurface ( SE_GridCarColor );
+
+
+end;
+
 procedure TForm1.SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
 begin
   SelectSetupQual ( CellX );
 end;
 
+procedure TForm1.SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  i: Integer;
+begin
+  // click sulla cellGrid. è per forza presente una CarBmp
+  // mostro i 5 possibili colori. non sono tenuto a scambiarle
+  if CellX = 0 then begin
+    RowPlayer := CellY;
+    SE_GridCarColor.Visible := True;
+    SE_GridCarColor.RefreshSurface ( SE_GridCarColor );
+  end;
+
+end;
+
 procedure TForm1.SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;  Sprite: SE_Sprite);
 begin
   SelectSetupWheater ( CellX );
+end;
+function TForm1.FindCarBmpPos ( Pos : Integer ): pTCarBmp;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for I := Low ( CarBmp ) to High ( CarBmp ) do begin
+    if CarBmp[i].PosGrid = Pos then begin
+      Result := @(CarBmp[i]);
+      Exit;
+    end;
+
+  end;
+end;
+procedure TForm1.ResetCarColor;
+var
+  bmp : SE_bitmap;
+begin
+  SE_GridCarColor.ClearData;   // importante anche pr memoryleak
+  SE_GridCarColor.DefaultColWidth := 51;
+  SE_GridCarColor.DefaultRowHeight := 24;
+  SE_GridCarColor.ColCount := 1;
+  SE_GridCarColor.RowCount := 5;
+  SE_GridCarColor.Columns[0].Width := 51;
+  SE_GridCarColor.Rows[0].Height := 24;
+  SE_GridCarColor.Rows[1].Height := 24;
+  SE_GridCarColor.Rows[2].Height := 24;
+  SE_GridCarColor.Rows[3].Height := 24;
+  SE_GridCarColor.Rows[4].Height := 24;
+
+  SE_GridCarColor.Height := 24*5;
+  SE_GridCarColor.Width := 51;
+
+
+  bmp := SE_bitmap.Create ( dir_Cars + '1.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridCarColor.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  bmp.Free;
+
+  bmp := SE_bitmap.Create ( dir_Cars + '3.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridCarColor.AddSE_Bitmap ( 0, 1, 1 , bmp, false );
+  bmp.Free;
+
+  bmp := SE_bitmap.Create ( dir_Cars + '5.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridCarColor.AddSE_Bitmap ( 0, 2, 1 , bmp, false );
+  bmp.Free;
+
+  bmp := SE_bitmap.Create ( dir_Cars + '7.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridCarColor.AddSE_Bitmap ( 0, 3, 1 , bmp, false );
+  bmp.Free;
+
+  bmp := SE_bitmap.Create ( dir_Cars + '9.bmp' );
+  bmp.Stretch(51,24);
+  SE_GridCarColor.AddSE_Bitmap ( 0, 4, 1 , bmp, false );
+  bmp.Free;
+
+  SE_GridCarColor.CellsEngine.ProcessSprites(20);
+  SE_GridCarColor.RefreshSurface ( SE_GridCarColor );
+
 end;
 
 end.
