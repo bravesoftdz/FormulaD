@@ -180,19 +180,19 @@ object Form1: TForm1
       ParentFont = False
     end
     object btnStartGame: TCnSpeedButton
-      Left = 123
-      Top = 481
-      Width = 233
+      Left = 332
+      Top = 489
+      Width = 169
       Height = 32
       Cursor = crHandPoint
       Color = clGray
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      Caption = 'Start'
+      Caption = 'Start Game'
       Enabled = False
       Font.Charset = DEFAULT_CHARSET
-      Font.Color = 4308735
+      Font.Color = clLime
       Font.Height = -21
       Font.Name = 'Calibri'
       Font.Style = [fsBold]
@@ -201,12 +201,60 @@ object Form1: TForm1
       OnClick = btnStartGameClick
     end
     object lblCarSetup: TLabel
-      Left = 376
-      Top = 308
+      Left = 8
+      Top = 388
       Width = 97
       Height = 16
       AutoSize = False
       Caption = 'Car Setup:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clYellow
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object btnStartServer: TCnSpeedButton
+      Left = 8
+      Top = 489
+      Width = 318
+      Height = 32
+      Cursor = crHandPoint
+      Color = clGray
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = 'Start Server'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clLime
+      Font.Height = -21
+      Font.Name = 'Calibri'
+      Font.Style = [fsBold]
+      Margin = 4
+      ParentFont = False
+      OnClick = btnStartServerClick
+    end
+    object lblServerPwd: TLabel
+      Left = 8
+      Top = 467
+      Width = 65
+      Height = 16
+      AutoSize = False
+      Caption = 'Password:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clYellow
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lblServerPort: TLabel
+      Left = 203
+      Top = 467
+      Width = 73
+      Height = 16
+      AutoSize = False
+      Caption = 'Server Port:'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clYellow
       Font.Height = -13
@@ -254,6 +302,7 @@ object Form1: TForm1
       ParentCtl3D = False
       ParentFont = False
       TabOrder = 1
+      OnCloseUp = cbLapsCloseUp
     end
     object SE_GridWheater: SE_Grid
       Left = 64
@@ -408,17 +457,17 @@ object Form1: TForm1
       Font.Style = []
     end
     object EdtPwd: TEdit
-      Left = 8
-      Top = 440
+      Left = 79
+      Top = 462
       Width = 121
       Height = 21
       TabOrder = 7
-      Text = 'Password!'
+      Text = 'Password'
     end
     object edtPort: TEdit
-      Left = 256
-      Top = 440
-      Width = 121
+      Left = 285
+      Top = 462
+      Width = 41
       Height = 21
       NumbersOnly = True
       TabOrder = 8
@@ -461,6 +510,73 @@ object Form1: TForm1
       Font.Name = 'Tahoma'
       Font.Style = []
     end
+    object cbCarSetup: TComboBox
+      Left = 80
+      Top = 385
+      Width = 241
+      Height = 22
+      BevelEdges = []
+      BevelInner = bvNone
+      BevelOuter = bvNone
+      Style = csOwnerDrawFixed
+      Color = 8081721
+      Ctl3D = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentCtl3D = False
+      ParentFont = False
+      TabOrder = 10
+    end
+  end
+  object SE_Panel1: SE_Panel
+    Left = 24
+    Top = 24
+    Width = 337
+    Height = 457
+    TabOrder = 2
+    object Button1: TButton
+      Tag = 1
+      Left = 64
+      Top = 53
+      Width = 113
+      Height = 25
+      Caption = 'Connect Client 1'
+      TabOrder = 0
+      OnClick = Button1Click
+    end
+    object Button2: TButton
+      Tag = 2
+      Left = 64
+      Top = 123
+      Width = 113
+      Height = 25
+      Caption = 'Connect Client 2'
+      TabOrder = 1
+      OnClick = Button1Click
+    end
+    object Button3: TButton
+      Tag = 3
+      Left = 64
+      Top = 180
+      Width = 113
+      Height = 25
+      Caption = 'Connect Client 3'
+      TabOrder = 2
+      OnClick = Button1Click
+    end
+    object Button4: TButton
+      Tag = 4
+      Left = 64
+      Top = 243
+      Width = 113
+      Height = 25
+      Caption = 'Connect Client 4'
+      TabOrder = 3
+      OnClick = Button1Click
+    end
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
@@ -470,6 +586,7 @@ object Form1: TForm1
   object Tcpserver: TWSocketThrdServer
     LineLimit = 1024
     LineEnd = #13#10
+    OnLineLimitExceeded = TcpserverLineLimitExceeded
     Proto = 'tcp'
     LocalAddr = '0.0.0.0'
     LocalAddr6 = '::'
@@ -477,11 +594,97 @@ object Form1: TForm1
     SocksLevel = '5'
     ExclusiveAddr = False
     ComponentOptions = []
+    OnDataAvailable = TcpserverDataAvailable
+    OnBgException = TcpserverBgException
     SocketErrs = wsErrTech
+    OnClientDisconnect = TcpserverClientDisconnect
+    OnClientConnect = TcpserverClientConnect
     MultiListenSockets = <>
     ClientsPerThread = 1
     Left = 264
     Top = 672
     Banner = ''
+  end
+  object tcp: TWSocket
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    OnSessionConnected = tcpSessionConnected
+    SocketErrs = wsErrTech
+    Left = 39
+    Top = 34
+  end
+  object WSocket1: TWSocket
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    OnSessionConnected = tcpSessionConnected
+    SocketErrs = wsErrTech
+    Left = 39
+    Top = 82
+  end
+  object WSocket2: TWSocket
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    OnSessionConnected = tcpSessionConnected
+    SocketErrs = wsErrTech
+    Left = 39
+    Top = 146
+  end
+  object WSocket3: TWSocket
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    OnSessionConnected = tcpSessionConnected
+    SocketErrs = wsErrTech
+    Left = 39
+    Top = 210
+  end
+  object WSocket4: TWSocket
+    LineLimit = 1024
+    LineEnd = #13#10
+    Proto = 'tcp'
+    LocalAddr = '0.0.0.0'
+    LocalAddr6 = '::'
+    LocalPort = '0'
+    SocksLevel = '5'
+    ExclusiveAddr = False
+    ComponentOptions = []
+    OnSessionConnected = tcpSessionConnected
+    SocketErrs = wsErrTech
+    Left = 39
+    Top = 266
+  end
+  object SE_EngineCars: SE_Engine
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 0
+    Left = 160
+    Top = 576
   end
 end

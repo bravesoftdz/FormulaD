@@ -4,9 +4,9 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls, DSE_Panel, Vcl.StdCtrls,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls, DSE_Panel, Vcl.StdCtrls, formulaDBrain,
   DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles, OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS,
-  OverbyteIcsWSocketTS ;
+  OverbyteIcsWSocketTS, StrUtils ;
 type TCarBmp = record
   bmp : SE_Bitmap;
   PosGrid : Integer;
@@ -39,6 +39,21 @@ type
     btnStartGame: TCnSpeedButton;
     lblCarSetup: TLabel;
     SE_GridCarColor: SE_Grid;
+    btnStartServer: TCnSpeedButton;
+    cbCarSetup: TComboBox;
+    SE_Panel1: SE_Panel;
+    tcp: TWSocket;
+    Button1: TButton;
+    WSocket1: TWSocket;
+    WSocket2: TWSocket;
+    WSocket3: TWSocket;
+    WSocket4: TWSocket;
+    Button2: TButton;
+    Button3: TButton;
+    Button4: TButton;
+    lblServerPwd: TLabel;
+    lblServerPort: TLabel;
+    SE_EngineCars: SE_Engine;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
@@ -52,6 +67,15 @@ type
       Sprite: SE_Sprite);
     procedure SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
       Sprite: SE_Sprite);
+    procedure cbLapsCloseUp(Sender: TObject);
+    procedure btnStartServerClick(Sender: TObject);
+    procedure TcpserverClientConnect(Sender: TObject; Client: TWSocketClient; Error: Word);
+    procedure TcpserverLineLimitExceeded(Sender: TObject; RcvdLength: Integer; var ClearData: Boolean);
+    procedure TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
+    procedure TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
+    procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
+    procedure Button1Click(Sender: TObject);
+    procedure tcpSessionConnected(Sender: TObject; ErrCode: Word);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -61,45 +85,163 @@ type
     procedure SelectSetupQual ( Col : Integer );
     procedure ResetCarColor;
     function FindCarBmpPos ( Pos : Integer ): pTCarBmp;
+    procedure ConnectClient;
   public
     { Public declarations }
   end;
 
   const EndofLine = 'ENDFD';
+
 var
   Form1: TForm1;
   dir_bmpWheater, dir_Cars, dir_Circuits: string;
   CarBmp : array[1..10] of TCarBmp;
   RowPlayer: Integer; // per il cambio di colore
+  Brain: TFormulaDBrain;
 implementation
 
 {$R *.dfm}
+
+function RemoveEndOfLine(const Line : String) : String;
+begin
+    if (Length(Line) >= Length(EndOfLine)) and
+       (StrLComp(PChar(@Line[1 + Length(Line) - Length(EndOfLine)]),
+                 PChar(EndOfLine),
+                 Length(EndOfLine)) = 0) then
+        Result := Copy(Line, 1, Length(Line) - Length(EndOfLine))
+    else
+        Result := Line;
+end;
+function IsStandardText(const aValue: string): Boolean; // accetta solo certi caratteri in input dal client
+const
+  CHARS = ['0'..'9', 'a'..'z', 'A'..'Z', ',', ':','=','.','_' ,'-' ];
+var
+  i: Integer;
+  aString: string;
+begin
+  aString := aValue.Trim;
+  for i := 1 to Length(aString) do begin
+    if not (aString[i] in CHARS) then begin
+      Result := False;
+      Exit;
+    end;
+  end;
+  Result := true;
+end;
 
 procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
   SelectSetupWheater (4);
   SelectSetupQual (1);
-  TcpServer.Port :=  edtPort.Text ;
-  TcpServer.LineMode            := true;
-  TcpServer.LineEdit            := false;
-  TcpServer.LineEnd             := EndOfLine;
-  TcpServer.LineLimit           := 1024;
-  TcpServer.Addr                := '0.0.0.0';
-  TcpServer.MaxClients          := StrToInt(cbHumanPlayers.text);
-  TcpServer.Listen ;
-
   RefreshPlayerCPU;
-
 end;
 
 procedure TForm1.btnStartGameClick(Sender: TObject);
+var
+  aPlayer: TPlayer;
+  i,r: Integer;
 begin
 // quando tutti sono connessi
+  for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
+    for I := 0 to Tcpserver.ClientCount -1 do begin
+      if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,i].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
+        aPlayer := TPlayer.Create;
+        aPlayer.CliId := TcpServer.Client[i].CliId;
+        aPLayer.UserName := TcpServer.Client[i].UserName;
+
+        aPlayer.Car := StrToInt( JustNameL( SE_GridSetupPlayers.Cells[1,i].Bitmap.BmpName ));
+        aPlayer.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aPlayer.Car) + '.bmp', IntToStr(aPlayer.CliId),1,1,1000,0,0,true );
+        brain.lstPlayers.Add(aPlayer);
+
+      end;
+
+    end;
+  end;
+
+  if Brain.lstPlayers.Count = StrToInt( cbHumanPlayers.Text ) then begin
+    for I := 0 to Tcpserver.ClientCount -1 do begin
+      TcpServer.Client[i].SendStr( 'setup' + EndOfLine );
+    end;
+
+  end;
+
+
+end;
+
+procedure TForm1.btnStartServerClick(Sender: TObject);
+begin
+
+  if btnStartServer.Caption = 'Start Server' then begin
+    TcpServer.Port :=  edtPort.Text ;
+    TcpServer.LineMode            := true;
+    TcpServer.LineEdit            := false;
+    TcpServer.LineEnd             := EndOfLine;
+    TcpServer.LineLimit           := 1024;
+    TcpServer.Addr                := '0.0.0.0';
+    TcpServer.MaxClients          := StrToInt(cbHumanPlayers.text);
+    TcpServer.Listen ;
+    btnStartServer.Font.Color := clRed;
+    btnStartServer.Caption := 'Stop Server';
+    cbHumanPlayers.Enabled := False;
+    cbCPU.Enabled := False;
+    lblHumanPlayers.Enabled := False;
+    lblCPU.Enabled := False;
+
+    ConnectClient;
+
+  end
+  else begin
+    TcpServer.DisconnectAll;
+    Tcpserver.Close;
+    btnStartServer.Font.Color := clLime;
+    btnStartServer.Caption := 'Start Server';
+    cbHumanPlayers.Enabled := true;
+    cbCPU.Enabled := true;
+    lblHumanPlayers.Enabled := true;
+    lblCPU.Enabled := True;
+    btnStartGame.Enabled := False;
+  end;
+end;
+procedure TForm1.ConnectClient;
+begin
+  tcp.Addr := '127.0.0.1';
+  Tcp.Port := EdtPort.Text;
+
+  tcp.LineMode := true;
+  tcp.LineLimit := 8192;
+  tcp.LineEdit  := false;
+  tcp.LineEnd := EndOfLine;
+  tcp.LingerOnOff := wsLingerOn;
+  Tcp.Connect;
+
+end;
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  c: TWsocket;
+begin
+
+    if LeftStr ( TButton(Sender).Caption ,3) = 'Con'  then begin
+      TButton(Sender).Caption := 'Disconnect client ' + IntToStr(TButton(Sender).Tag);
+      c:= FindComponent( 'WSocket' + IntToStr(  TButton(Sender).Tag ) ) as TWsocket;
+      c.Addr := '127.0.0.1';
+      c.Port := EdtPort.Text;
+
+      c.LineMode := true;
+      c.LineLimit := 8192;
+      c.LineEdit  := false;
+      c.LineEnd := EndOfLine;
+      c.LingerOnOff := wsLingerOn;
+      c.Connect;
+   end
+   else if LeftStr ( TButton(Sender).Caption ,3) = 'Dis' then begin
+      TButton(Sender).Caption := 'Connect client ' + IntToStr(TButton(Sender).Tag);
+      c:= FindComponent( 'WSocket' + IntToStr(  TButton(Sender).Tag ) ) as TWsocket;
+      c.Close;
+   end;
+
 end;
 
 procedure TForm1.cbCPUCloseUp(Sender: TObject);
-var
-  i: Integer;
 begin
   if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
     cbHumanPlayers.ItemIndex := ( 10 -  StrToInt(cbCPU.Text) ) ;
@@ -109,8 +251,6 @@ begin
 end;
 
 procedure TForm1.cbHumanPlayersCloseUp(Sender: TObject);
-var
-  i: Integer;
 begin
   if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
     cbCPU.ItemIndex := ( 10 -  StrToInt(cbHumanPlayers.Text) ) ;
@@ -118,6 +258,22 @@ begin
     RefreshPlayerCPU;
 
 end;
+procedure TForm1.cbLapsCloseUp(Sender: TObject);
+begin
+  cbCarSetup.Clear;
+
+  if (cbLaps.Text = '1') or (cbLaps.Text ='2') then begin
+    cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
+    cbCarSetup.Items.Add( 'Setup Free 18 Points');  // x1 x2  lap
+  end
+  else if cbLaps.Text = '3' then begin
+    cbCarSetup.Items.Add( 'Setup 20 Points limit 14/7');
+  end;
+  cbCarSetup.ItemIndex := 0;
+
+
+end;
+
 procedure TForm1.RefreshPlayerCPU;
 var
   i,TotRow: Integer;
@@ -145,9 +301,12 @@ begin
   for I := 0 to TotRow -1 do begin
     SE_GridSetupPlayers.Rows[i].Height := 24;
     SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;
+    SE_GridSetupPlayers.Cells[1,i].Guid := 0;
 
-    if i < StrtoInt ( cbHumanPlayers.text )   then
+    if i < StrtoInt ( cbHumanPlayers.text ) then begin
+      SE_GridSetupPlayers.Cells[1,i].FontColor := clYellow;
       SE_GridSetupPlayers.Cells[1,i].Text  := 'Waiting for Tcp connection'
+    end
       else SE_GridSetupPlayers.Cells[1,i].Text  := 'CPU' + IntToStr(I+1);
 
     aCarBmp:= FindCarbmpPos ( i );
@@ -168,18 +327,6 @@ begin
      SE_GridSetupPlayers.Height :=1;
 
   SE_GridSetupPlayers.Width := 160+51;
-
-  //----------------------------------------------------------------------
-
-            // ----- Tcp refresh Grid players --------
-        for I := 0 to Tcpserver.ClientCount -1 do begin
-          if i <= StrtoInt ( cbHumanPlayers.text ) then begin
-            SE_GridSetupPlayers.Cells[1,i+1].Text := Tcpserver.Client[i].UserName;
-          end;
-        end;
-
-            // ---------------------------------------
-
 
   SE_GridSetupPlayers.CellsEngine.ProcessSprites(20);
   SE_GridSetupPlayers.RefreshSurface ( SE_GridSetupPlayers );
@@ -213,25 +360,25 @@ begin
   cbLaps.Items.Add('3');
   cbLaps.ItemIndex := 0;
 
-  for I := 0 to 10 do begin
+  for I := 1 to 10 do begin
     cbHumanPlayers.Items.add ( IntTostr(i));
   end;
-  cbHumanPlayers.ItemIndex := 1;
-  for I := 0 to 10 do begin
+  cbHumanPlayers.ItemIndex := 0;
+  for I := 0 to 9 do begin
     cbCPU.Items.add ( IntTostr(i));
   end;
   cbCPU.ItemIndex := 9;
 
   CarBmp[1].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
   CarBmp[2].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
-  CarBmp[3].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
-  CarBmp[4].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
-  CarBmp[5].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
-  CarBmp[6].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
-  CarBmp[7].bmp := SE_Bitmap.Create ( dir_Cars + '7.bmp');
-  CarBmp[8].bmp := SE_Bitmap.Create ( dir_Cars + '7.bmp');
-  CarBmp[9].bmp := SE_Bitmap.Create ( dir_Cars + '9.bmp');
-  CarBmp[10].bmp := SE_Bitmap.Create ( dir_Cars + '9.bmp');
+  CarBmp[3].bmp := SE_Bitmap.Create ( dir_Cars + '2.bmp');
+  CarBmp[4].bmp := SE_Bitmap.Create ( dir_Cars + '2.bmp');
+  CarBmp[5].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[6].bmp := SE_Bitmap.Create ( dir_Cars + '3.bmp');
+  CarBmp[7].bmp := SE_Bitmap.Create ( dir_Cars + '4.bmp');
+  CarBmp[8].bmp := SE_Bitmap.Create ( dir_Cars + '4.bmp');
+  CarBmp[9].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
+  CarBmp[10].bmp := SE_Bitmap.Create ( dir_Cars + '5.bmp');
 
   for I := Low (CarBmp) to High (CarBmp) do begin
     CarBmp[i].PosGrid := -1;
@@ -239,6 +386,12 @@ begin
 
   CarBmp[1].PosGrid := 0;
   ResetCarColor;
+
+  cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
+  cbCarSetup.Items.Add( 'Setup Free 18 Points');  // x1 x2  lap
+  cbCarSetup.ItemIndex := 0;
+
+  Brain := TFormulaDBrain.Create;
 
 end;
 procedure TForm1.ResetSetupWheater;
@@ -372,8 +525,6 @@ begin
 end;
 
 procedure TForm1.SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
-var
-  i: Integer;
 begin
   // click sulla cellGrid. è per forza presente una CarBmp
   // mostro i 5 possibili colori. non sono tenuto a scambiarle
@@ -389,6 +540,136 @@ procedure TForm1.SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouse
 begin
   SelectSetupWheater ( CellX );
 end;
+procedure TForm1.TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
+begin
+//
+end;
+
+procedure TForm1.TcpserverClientConnect(Sender: TObject; Client: TWSocketClient; Error: Word);
+begin
+    if TcpServer.ClientCount > TcpServer.MaxClients then begin
+     Client.CloseDelayed ;
+     Exit;
+    end;
+    Client.LastTickCount       := 0;  // a mezzanotte ....bug
+    Client.LineMode            := TRUE;
+    Client.LineEnd             := EndOfLine;
+    Client.LineEdit            := false;
+    Client.LineLimit           := 1024;
+    Client.OnDataAvailable     := TcpServerDataAvailable;
+    Client.OnLineLimitExceeded := TcpServerLineLimitExceeded;
+    Client.OnBgException       := TcpServerBgException;
+
+
+end;
+
+procedure TForm1.TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
+var
+  i: Integer;
+begin
+
+
+    for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
+      if SE_GridSetupPlayers.Cells[1,i].Guid = Client.CliId then begin
+        Client.UserName := '';
+        SE_GridSetupPlayers.Cells[1,i].Guid := 0;
+        SE_GridSetupPlayers.Cells[1,i].FontColor := clYellow;
+        SE_GridSetupPlayers.Cells[1,i].Text := 'Waiting for connection';
+        SE_GridSetupPlayers.refreshSurface (SE_GridSetupPlayers) ;
+        Break;
+      end;
+    end;
+
+    for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
+      if SE_GridSetupPlayers.Cells[1,i].Guid = 0 then
+        Exit;
+    end;
+
+    // se non è uscito con exit sopra, ci sono tutti i client collegati
+    btnStartGame.Enabled := True;
+
+
+
+end;
+
+procedure TForm1.TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
+var
+    Cli: TWSocketThrdClient;
+    RcvdLine: string;
+    ts: TStringList;
+    i: Integer;
+begin
+  Cli := Sender as TWSocketThrdClient;
+
+
+  RcvdLine :=  RemoveEndOfLine  (Cli.ReceiveStr);
+  Cli.Processing := True;
+  ts:= TStringList.Create;
+  ts.StrictDelimiter := True;
+  ts.CommaText := RcvdLine;
+
+
+  {$IFDEF  useMemo}
+  if memo1.Lines.Count > 300 then
+    memo1.Lines.Clear;
+  if Length(RcvdLine) = 0 then  Exit;
+  Display('Received from ' + Cli.GetPeerAddr  + ': ''' + RcvdLine + '''');
+  {$ENDIF  useMemo}
+
+  if not IsStandardText ( RcvdLine ) then begin
+    ts.Free;
+    exit;
+  end;
+
+  if ts.Count < 1 then begin
+    ts.Free;
+    exit;
+  end;
+
+
+  if ts[0] ='login' then begin
+    if ts.Count <> 3 then begin
+      ts.Free;
+      exit;
+    end;
+    if ts[2] <> EdtPwd.text then begin
+      ts.Free;
+      exit;
+    end;
+
+    for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
+      if SE_GridSetupPlayers.Cells[1,i].Guid = 0 then begin
+        Cli.UserName := ts[1];
+        SE_GridSetupPlayers.Cells[1,i].Guid := Cli.CliId;
+        SE_GridSetupPlayers.Cells[1,i].Text := Cli.UserName;
+        SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;
+        SE_GridSetupPlayers.refreshSurface (SE_GridSetupPlayers) ;
+        Break;
+      end;
+    end;
+
+    for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
+      if SE_GridSetupPlayers.Cells[1,i].Guid = 0 then
+        Exit;
+    end;
+
+    // se non è uscito con exit sopra, ci sono tutti i client collegati
+    btnStartGame.Enabled := True;
+  end;
+
+
+end;
+
+procedure TForm1.TcpserverLineLimitExceeded(Sender: TObject; RcvdLength: Integer; var ClearData: Boolean);
+begin
+//
+end;
+
+procedure TForm1.tcpSessionConnected(Sender: TObject; ErrCode: Word);
+begin
+  TWSocketClient(Sender).SendStr( 'login,'+ TWSocket(Sender).Name + ',' + EdtPwd.text + EndOfLine);
+end;
+
 function TForm1.FindCarBmpPos ( Pos : Integer ): pTCarBmp;
 var
   i: Integer;
@@ -427,22 +708,22 @@ begin
   SE_GridCarColor.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
   bmp.Free;
 
-  bmp := SE_bitmap.Create ( dir_Cars + '3.bmp' );
+  bmp := SE_bitmap.Create ( dir_Cars + '2.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 1, 1 , bmp, false );
   bmp.Free;
 
-  bmp := SE_bitmap.Create ( dir_Cars + '5.bmp' );
+  bmp := SE_bitmap.Create ( dir_Cars + '3.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 2, 1 , bmp, false );
   bmp.Free;
 
-  bmp := SE_bitmap.Create ( dir_Cars + '7.bmp' );
+  bmp := SE_bitmap.Create ( dir_Cars + '4.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 3, 1 , bmp, false );
   bmp.Free;
 
-  bmp := SE_bitmap.Create ( dir_Cars + '9.bmp' );
+  bmp := SE_bitmap.Create ( dir_Cars + '5.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 4, 1 , bmp, false );
   bmp.Free;

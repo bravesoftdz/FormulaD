@@ -6,7 +6,23 @@ type TCircuitDescr = record
   Corners: Byte;
   CarAngle: SmallInt;
 end;
+type TPlayer = Class
+  CliId : Integer;
+  UserName: string;
+  Car: Byte;            // il box sulla mappa sul quale mi devo fermare
 
+  SE_Sprite : SE_Sprite;
+
+  Tire : ShortInt;
+  Brakes: ShortInt;
+  Gear: ShortInt;
+  Body: ShortInt;
+  Engine: ShortInt;
+  Suspension: ShortInt;
+
+  LastGear: ShortInt;
+
+end;
 type TCell = Class
   public
   Guid : SmallInt;
@@ -23,12 +39,15 @@ type TCell = Class
   constructor Create;
   destructor Destroy;override;
 end;
-type TCar = Class
-  Tire : ShortInt;
-  SE_Sprite : SE_Sprite;
 
-End;
-
+type TFormulaDBrain = class
+  private
+  public
+    lstPlayers: TObjectList<TPlayer>;
+    EngineCars : SE_Engine;
+  constructor Create;
+  destructor Destroy;override;
+end;
 implementation
 constructor TCell.Create;
 begin
@@ -41,6 +60,13 @@ begin
   Adjacent.Free;
   inherited;
 end;
-
+constructor TFormulaDBrain.Create;
+begin
+  lstPlayers:= TObjectList<TPlayer>.Create(true);
+end;
+destructor TFormulaDBrain.Destroy;
+begin
+  lstPlayers.Free;
+end;
 end.
 
