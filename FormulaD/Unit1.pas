@@ -8,6 +8,7 @@ uses
   DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles, OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS,
   OverbyteIcsWSocketTS, StrUtils ;
 type TCarBmp = record
+  Ids: String;
   bmp : SE_Bitmap;
   PosGrid : Integer;
 end;
@@ -54,6 +55,11 @@ type
     lblServerPwd: TLabel;
     lblServerPort: TLabel;
     SE_EngineCars: SE_Engine;
+    PanelCarSetup: SE_Panel;
+    SE_GridCarSetup: SE_Grid;
+    SE_Theater1: SE_Theater;
+    SE_Engine1: SE_Engine;
+    btnCancelGame: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure SE_GridWheaterGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
@@ -76,6 +82,9 @@ type
     procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
     procedure Button1Click(Sender: TObject);
     procedure tcpSessionConnected(Sender: TObject; ErrCode: Word);
+    procedure btnExitClick(Sender: TObject);
+    procedure btnCancelGameClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -129,11 +138,33 @@ begin
   Result := true;
 end;
 
+procedure TForm1.btnCancelGameClick(Sender: TObject);
+begin
+  Tcpserver.DisconnectAll;
+  btnStartServer.Font.Color := clLime;
+  btnStartServer.Caption := 'Start Server';
+  cbHumanPlayers.Enabled := true;
+  cbCPU.Enabled := true;
+  lblHumanPlayers.Enabled := true;
+  lblCPU.Enabled := True;
+  btnStartGame.Enabled := False;
+  Tcpserver.Close;
+  PanelCreateGame.Visible:= False;
+  PanelMain.Visible := True;
+end;
+
 procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
+  PanelCreateGame.Visible := True;
+  PanelMain.Visible := False;
   SelectSetupWheater (4);
   SelectSetupQual (1);
   RefreshPlayerCPU;
+end;
+
+procedure TForm1.btnExitClick(Sender: TObject);
+begin
+  Application.Terminate;
 end;
 
 procedure TForm1.btnStartGameClick(Sender: TObject);
@@ -144,13 +175,15 @@ begin
 // quando tutti sono connessi
   for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
     for I := 0 to Tcpserver.ClientCount -1 do begin
-      if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,i].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
+      if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,R].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
         aPlayer := TPlayer.Create;
         aPlayer.CliId := TcpServer.Client[i].CliId;
+        aPlayer.AI  := False;
         aPLayer.UserName := TcpServer.Client[i].UserName;
-
-        aPlayer.Car := StrToInt( JustNameL( SE_GridSetupPlayers.Cells[1,i].Bitmap.BmpName ));
+        aPlayer.Car := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
         aPlayer.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aPlayer.Car) + '.bmp', IntToStr(aPlayer.CliId),1,1,1000,0,0,true );
+
+
         brain.lstPlayers.Add(aPlayer);
 
       end;
@@ -158,12 +191,41 @@ begin
     end;
   end;
 
-  if Brain.lstPlayers.Count = StrToInt( cbHumanPlayers.Text ) then begin
-    for I := 0 to Tcpserver.ClientCount -1 do begin
-      TcpServer.Client[i].SendStr( 'setup' + EndOfLine );
-    end;
+  for r := StrToInt( cbHumanPlayers.Text ) to SE_GridSetupPlayers.RowCount -1 do begin
+
+        aPlayer := TPlayer.Create;
+        aPlayer.CliId := 0;
+        aPlayer.AI := True;
+        aPLayer.UserName := SE_GridSetupPlayers.Cells[0,r].Text;
+        aPlayer.Car := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
+        aPlayer.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aPlayer.Car) + '.bmp', aPLayer.UserName,1,1,1000,0,0,true );
+
+
+        brain.lstPlayers.Add(aPlayer);
 
   end;
+
+  if Brain.lstPlayers.Count = StrToInt( cbHumanPlayers.Text ) + StrToInt( cbCPU.Text ) then begin
+
+    if Brain.Qualifications = QualLap then begin
+
+    end
+    else if Brain.Qualifications = QualRnd then begin
+        // random StartGrid
+
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+        TcpServer.Client[i].SendStr( 'setup' + EndOfLine );
+      end;
+
+
+    end;
+
+      PanelCreateGame.Visible := False;
+      SE_Theater1.Active := True;
+      SE_Theater1.Visible := True;
+  end;
+
+
 
 
 end;
@@ -315,11 +377,13 @@ begin
       aCarBmp:= FindCarbmpPos ( -1 );                           // cerco la prima libera con valore -1
       aCarBmp.PosGrid := i;
       SE_GridSetupPlayers.AddSE_Bitmap(0,i,1,aCarBmp.bmp ,true);
+      SE_GridSetupPlayers.Cells[0,i].ids := aCarBmp.Ids;
     end
     else begin
-      if aCarBmp.PosGrid > -1 then                                // se la car è già assegnata alla row
-        SE_GridSetupPlayers.AddSE_Bitmap(0,i,1,aCarBmp.bmp ,true)
-
+      if aCarBmp.PosGrid > -1 then begin                               // se la car è già assegnata alla row
+        SE_GridSetupPlayers.AddSE_Bitmap(0,i,1,aCarBmp.bmp ,true);
+        SE_GridSetupPlayers.Cells[0,i].ids := aCarBmp.Ids;
+      end;
     end;
   end;
   SE_GridSetupPlayers.Height := 24 * TotRow ;
@@ -336,6 +400,14 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   i: Integer;
 begin
+  SE_Theater1.Left:=0;
+  SE_Theater1.Top:=0;
+  SE_Theater1.Width := Form1.Width;
+  SE_Theater1.height := Form1.Height;
+  SE_Theater1.Visible := False;
+
+  Brain := TFormulaDBrain.Create;
+
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
   dir_Circuits := ExtractFilePath (Application.ExeName)+'circuits\';
   dir_bmpWheater :=  ExtractFilePath (Application.ExeName)+ 'bmp\Wheater\';
@@ -385,6 +457,19 @@ begin
   end;
 
   CarBmp[1].PosGrid := 0;
+
+  CarBmp[1].Ids := '1';
+  CarBmp[2].Ids := '1';
+  CarBmp[3].Ids := '2';
+  CarBmp[4].Ids := '2';
+  CarBmp[5].Ids := '3';
+  CarBmp[6].Ids := '3';
+  CarBmp[7].Ids := '4';
+  CarBmp[8].Ids := '4';
+  CarBmp[9].Ids := '5';
+  CarBmp[10].Ids := '5';
+
+
   ResetCarColor;
 
   cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
@@ -394,6 +479,11 @@ begin
   Brain := TFormulaDBrain.Create;
 
 end;
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  Brain.Free;
+end;
+
 procedure TForm1.ResetSetupWheater;
 var
   bmp : SE_bitmap;
@@ -454,6 +544,10 @@ begin
   SE_GridWheater.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
   SE_GridWheater.CellsEngine.ProcessSprites(20);
   SE_GridWheater.RefreshSurface ( SE_GridWheater );
+
+  if Col = 4 then
+    Brain.Wheater := Brain.rndGenerate0 ( 4 )
+    else Brain.Wheater := Col;
 end;
 procedure TForm1.ResetSetupQual;
 var
@@ -486,7 +580,7 @@ begin
   SE_GridQual.RefreshSurface ( SE_GridQual );
 
 end;
-procedure TForm1.SelectSetupQual ( Col : integer);
+procedure TForm1.SelectSetupQual ( Col : integer);  // Disegno un bordo rosso
 begin
   ResetSetupQual;
   SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
@@ -497,22 +591,25 @@ begin
   SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
   SE_GridQual.CellsEngine.ProcessSprites(20);
   SE_GridQual.RefreshSurface ( SE_GridQual );
+
+  if Col = 0 then Brain.Qualifications:= QualLap
+    else Brain.Qualifications:= QualRnd;
+
 end;
 
 procedure TForm1.SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
-var
-  ACarBmp : pTCarBmp;
 begin
   // qui c'è il PickCar
   SE_GridCarColor.Visible := False;
 
   case CellY of
-    0: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[1].bmp;
-    1: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[3].bmp;
-    2: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[5].bmp;
-    3: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[7].bmp;
-    4: SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[9].bmp;
+    0: begin SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[1].bmp; end;
+    1: begin SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[3].bmp; end;
+    2: begin SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[5].bmp; end;
+    3: begin SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[7].bmp; end;
+    4: begin SE_GridSetupPlayers.Cells[0, RowPlayer].Bitmap :=  CarBmp[9].bmp; end;
   end;
+  SE_GridSetupPlayers.Cells[0, RowPlayer].Ids := SE_GridCarColor.cells[0,CellY].ids;
 
   SE_GridSetupPlayers.RefreshSurface ( SE_GridCarColor );
 
@@ -706,26 +803,31 @@ begin
   bmp := SE_bitmap.Create ( dir_Cars + '1.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  SE_GridCarColor.Cells[0,0].ids := '1';
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_Cars + '2.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 1, 1 , bmp, false );
+  SE_GridCarColor.Cells[0,1].ids := '2';
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_Cars + '3.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 2, 1 , bmp, false );
+  SE_GridCarColor.Cells[0,2].ids := '3';
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_Cars + '4.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 3, 1 , bmp, false );
+  SE_GridCarColor.Cells[0,4].ids := '3';
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_Cars + '5.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 4, 1 , bmp, false );
+  SE_GridCarColor.Cells[0,4].ids := '5';
   bmp.Free;
 
   SE_GridCarColor.CellsEngine.ProcessSprites(20);

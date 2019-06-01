@@ -13,6 +13,7 @@ object Form1: TForm1
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object PanelMain: SE_Panel
@@ -73,7 +74,7 @@ object Form1: TForm1
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      Caption = 'btnExit'
+      Caption = 'Exit'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = 4308735
       Font.Height = -21
@@ -81,6 +82,7 @@ object Form1: TForm1
       Font.Style = [fsBold]
       Margin = 4
       ParentFont = False
+      OnClick = btnExitClick
     end
   end
   object PanelCreateGame: SE_Panel
@@ -92,6 +94,7 @@ object Form1: TForm1
     Color = 8081721
     ParentBackground = False
     TabOrder = 1
+    Visible = False
     object lblCircuit: TLabel
       Left = 8
       Top = 16
@@ -261,6 +264,26 @@ object Form1: TForm1
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
+    end
+    object btnCancelGame: TCnSpeedButton
+      Left = 332
+      Top = 451
+      Width = 169
+      Height = 32
+      Cursor = crHandPoint
+      Color = clGray
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = 'Cancel'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = 8454143
+      Font.Height = -21
+      Font.Name = 'Calibri'
+      Font.Style = [fsBold]
+      Margin = 4
+      ParentFont = False
+      OnClick = btnCancelGameClick
     end
     object cbCircuit: TComboBox
       Left = 64
@@ -535,7 +558,7 @@ object Form1: TForm1
     Left = 24
     Top = 24
     Width = 337
-    Height = 457
+    Height = 321
     TabOrder = 2
     object Button1: TButton
       Tag = 1
@@ -577,6 +600,81 @@ object Form1: TForm1
       TabOrder = 3
       OnClick = Button1Click
     end
+  end
+  object PanelCarSetup: SE_Panel
+    Left = 53
+    Top = 740
+    Width = 241
+    Height = 125
+    BevelOuter = bvNone
+    Color = 8081721
+    ParentBackground = False
+    TabOrder = 3
+    Visible = False
+    object SE_GridCarSetup: SE_Grid
+      Left = 23
+      Top = 8
+      Width = 82
+      Height = 101
+      Cursor = crHandPoint
+      MouseScrollRate = 1.000000000000000000
+      MouseWheelInvert = False
+      MouseWheelValue = 10
+      MouseWheelZoom = False
+      MousePan = False
+      MouseScroll = False
+      BackColor = 8081721
+      AnimationInterval = 20
+      GridInfoCell = False
+      GridVisible = False
+      GridColor = clSilver
+      GridCellWidth = 40
+      GridCellHeight = 30
+      GridCellsX = 10
+      GridCellsY = 4
+      GridHexSmallWidth = 10
+      CollisionDelay = 0
+      ShowPerformance = False
+      VirtualWidth = 212
+      Virtualheight = 212
+      Passive = True
+      Visible = False
+      TabOrder = 0
+      OnGridCellMouseDown = SE_GridCarColorGridCellMouseDown
+      CellBorder = CellBorderNone
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+    end
+  end
+  object SE_Theater1: SE_Theater
+    Left = 336
+    Top = 740
+    Width = 100
+    Height = 100
+    MouseScrollRate = 1.000000000000000000
+    MouseWheelInvert = False
+    MouseWheelValue = 10
+    MouseWheelZoom = True
+    MousePan = True
+    MouseScroll = False
+    BackColor = clBlack
+    AnimationInterval = 20
+    GridInfoCell = False
+    GridVisible = False
+    GridColor = clSilver
+    GridCellWidth = 40
+    GridCellHeight = 30
+    GridCellsX = 10
+    GridCellsY = 4
+    GridHexSmallWidth = 10
+    CollisionDelay = 0
+    ShowPerformance = False
+    VirtualWidth = 212
+    Virtualheight = 212
+    TabOrder = 4
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
@@ -684,7 +782,17 @@ object Form1: TForm1
     PixelCollision = False
     IsoPriority = False
     Priority = 0
-    Left = 160
-    Top = 576
+    Theater = SE_Theater1
+    Left = 520
+    Top = 736
+  end
+  object SE_Engine1: SE_Engine
+    ClickSprites = False
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 0
+    Theater = SE_Theater1
+    Left = 455
+    Top = 736
   end
 end
