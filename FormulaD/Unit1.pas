@@ -4,9 +4,23 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls, DSE_Panel, Vcl.StdCtrls, formulaDBrain,
-  DSE_Misc, DSE_theater, DSE_Bitmap, DSE_GRID, DSE_SearchFiles, OverbyteIcsWndControl, OverbyteIcsWSocket, OverbyteIcsWSocketS,
-  OverbyteIcsWSocketTS, StrUtils ;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CnButtons, Vcl.ExtCtrls,Vcl.StdCtrls,
+  StrUtils, IniFiles, System.Generics.Defaults, System.Generics.Collections,
+
+  formulaDBrain,
+
+  DSE_Panel,
+  DSE_Misc,
+  DSE_theater,
+  DSE_Bitmap,
+  DSE_GRID,
+  DSE_SearchFiles,
+  OverbyteIcsWndControl,
+  OverbyteIcsWSocket,
+  OverbyteIcsWSocketS,
+  OverbyteIcsWSocketTS;
+
+
 type TCarBmp = record
   Ids: String;
   bmp : SE_Bitmap;
@@ -58,7 +72,7 @@ type
     PanelCarSetup: SE_Panel;
     SE_GridCarSetup: SE_Grid;
     SE_Theater1: SE_Theater;
-    SE_Engine1: SE_Engine;
+    SE_EngineBack: SE_Engine;
     btnCancelGame: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
@@ -95,6 +109,9 @@ type
     procedure ResetCarColor;
     function FindCarBmpPos ( Pos : Integer ): pTCarBmp;
     procedure ConnectClient;
+
+    procedure LoadCircuit ( CircuitName: string );
+    procedure CarSpritesReset ( StartingGrid : Boolean );
   public
     { Public declarations }
   end;
@@ -107,6 +124,8 @@ var
   CarBmp : array[1..10] of TCarBmp;
   RowPlayer: Integer; // per il cambio di colore
   Brain: TFormulaDBrain;
+  mm : TMemoryStream;
+
 implementation
 
 {$R *.dfm}
@@ -169,22 +188,25 @@ end;
 
 procedure TForm1.btnStartGameClick(Sender: TObject);
 var
-  aPlayer: TPlayer;
+  aCar: TCar;
   i,r: Integer;
 begin
 // quando tutti sono connessi
   for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
     for I := 0 to Tcpserver.ClientCount -1 do begin
       if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,R].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
-        aPlayer := TPlayer.Create;
-        aPlayer.CliId := TcpServer.Client[i].CliId;
-        aPlayer.AI  := False;
-        aPLayer.UserName := TcpServer.Client[i].UserName;
-        aPlayer.Car := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
-        aPlayer.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aPlayer.Car) + '.bmp', IntToStr(aPlayer.CliId),1,1,1000,0,0,true );
+        aCar := TCar.Create;
+        aCar.Guid := i ;
+        aCar.CliId := TcpServer.Client[i].CliId;
+        aCar.AI  := False;
+        aCar.UserName := TcpServer.Client[i].UserName;
+        aCar.Car := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
+        aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.Car) + '.bmp', IntToStr(aCar.CliId),1,1,1000,0,0,true );
+        aCar.box := aCar.Car;
+        aCar.SE_Sprite.Scale := 86;
+        aCar.SE_Sprite.Visible := False;
 
-
-        brain.lstPlayers.Add(aPlayer);
+        brain.lsTCars.Add(aCar);
 
       end;
 
@@ -193,25 +215,32 @@ begin
 
   for r := StrToInt( cbHumanPlayers.Text ) to SE_GridSetupPlayers.RowCount -1 do begin
 
-        aPlayer := TPlayer.Create;
-        aPlayer.CliId := 0;
-        aPlayer.AI := True;
-        aPLayer.UserName := SE_GridSetupPlayers.Cells[0,r].Text;
-        aPlayer.Car := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
-        aPlayer.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aPlayer.Car) + '.bmp', aPLayer.UserName,1,1,1000,0,0,true );
+        aCar := TCar.Create;
+        aCar.Guid := r ;
+        aCar.CliId := 0;
+        aCar.AI := True;
+        aCar.UserName := SE_GridSetupPlayers.Cells[0,r].Text;
+        aCar.Car := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
+        aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.Car) + '.bmp', aCar.UserName,1,1,1000,0,0,true );
+        aCar.box := aCar.Car;
+        aCar.SE_Sprite.Scale := 86;
+        aCar.SE_Sprite.Visible := False;
 
 
-        brain.lstPlayers.Add(aPlayer);
+        brain.lsTCars.Add(aCar);
 
   end;
 
-  if Brain.lstPlayers.Count = StrToInt( cbHumanPlayers.Text ) + StrToInt( cbCPU.Text ) then begin
+  if Brain.lsTCars.Count = StrToInt( cbHumanPlayers.Text ) + StrToInt( cbCPU.Text ) then begin   // tutti connessi
+
+    LoadCircuit (cbCircuit.text ) ; // le car sono già caricate anche come sprite
 
     if Brain.Qualifications = QualLap then begin
 
     end
     else if Brain.Qualifications = QualRnd then begin
-        // random StartGrid
+      // random StartGrid
+      Brain.CreateRndStartingGrid;
 
       for I := 0 to Tcpserver.ClientCount -1 do begin
         TcpServer.Client[i].SendStr( 'setup' + EndOfLine );
@@ -220,14 +249,34 @@ begin
 
     end;
 
-      PanelCreateGame.Visible := False;
-      SE_Theater1.Active := True;
-      SE_Theater1.Visible := True;
+    CarSpritesReset ( True ); // starting grid angle
+
+    PanelCreateGame.Visible := False;
+    SE_Theater1.Active := True;
+    SE_Theater1.Visible := True;
   end;
 
 
+end;
+procedure TForm1.CarSpritesReset ( StartingGrid : Boolean );
+var
+  i,StartAngle: Integer;
+  ini : TIniFile;
+begin
+  if StartingGrid then begin
+    ini := TIniFile.Create( dir_circuits + Brain.CircuitDescr.Name + '.ini' );
+    brain.CircuitDescr.CarAngle := ini.ReadInteger('setup','CarAngle',0);
+    ini.Free;
+  end;
 
-
+  for I := 0 to brain.lstCars.Count -1 do begin
+    Brain.lstCars[i].SE_Sprite.PositionX := Brain.lstCars[i].Cell.PixelX;
+    Brain.lstCars[i].SE_Sprite.PositionY := Brain.lstCars[i].Cell.PixelY;
+    if StartingGrid then begin
+      Brain.lstCars[i].SE_Sprite.Angle := brain.CircuitDescr.CarAngle;
+    end;
+    Brain.lstCars[i].SE_Sprite.Visible := True;
+  end;
 end;
 
 procedure TForm1.btnStartServerClick(Sender: TObject);
@@ -406,6 +455,7 @@ begin
   SE_Theater1.height := Form1.Height;
   SE_Theater1.Visible := False;
 
+  mm := TMemoryStream.Create;
   Brain := TFormulaDBrain.Create;
 
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
@@ -481,6 +531,7 @@ begin
 end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  mm.Free;
   Brain.Free;
 end;
 
@@ -834,5 +885,65 @@ begin
   SE_GridCarColor.RefreshSurface ( SE_GridCarColor );
 
 end;
+procedure TForm1.LoadCircuit ( CircuitName: string );
+var
+  ini : TIniFile;
+  TotCells,tmpSmallInt: SmallInt;
+  i,L,a,count: Integer;
+  aCell: TCell;
+  TotLinkForward, TotAdjacent, tmpb: Byte;
+  aSprite: SE_Sprite;
+begin
+  brain.Circuit.clear;
+
+  ini := TIniFile.Create( dir_circuits + CircuitName + '.ini' );
+  brain.CircuitDescr.Name := ini.ReadString('setup','Name','');
+  brain.CircuitDescr.Corners := ini.ReadInteger('setup','Corners',0);
+  ini.Free;
+
+  mm.LoadFromFile(  dir_circuits + CircuitName + '.fd' );
+  mm.Position := 0;
+  mm.Read ( TotCells, SizeOf(SmallInt) );
+  for I := 0 to TotCells -1 do begin
+    aCell := TCell.Create;
+    mm.Read( aCell.Guid , SizeOf(SmallInt) );
+    mm.Read( aCell.Lane , SizeOf(ShortInt) );
+    mm.Read( aCell.Corner , SizeOf(Byte) );
+    mm.Read( aCell.StartingGrid , SizeOf(Byte) );
+    mm.Read( aCell.Box , SizeOf(Byte) );
+    mm.Read( aCell.FinishLine , SizeOf(Boolean) );
+    mm.Read( aCell.DistCorner , SizeOf(Byte) );
+    mm.Read( aCell.DistStraight , SizeOf(Byte) );
+    mm.Read( aCell.PixelX , SizeOf(SmallInt) );
+    mm.Read( aCell.PixelY , SizeOf(SmallInt) );
+      // load linkForward e Adjacent
+    mm.Read( TotLinkForward, SizeOf(Byte) );
+    for L := 0 to TotLinkForward -1 do begin
+      mm.Read( tmpB , SizeOf(Byte) );
+      aCell.LinkForward.add ( tmpB );
+    end;
+    mm.Read( TotAdjacent, SizeOf(Byte) );
+    for A := 0 to TotAdjacent -1 do begin
+      mm.Read( tmpB , SizeOf(Byte) );
+      aCell.Adjacent.add ( tmpB );
+    end;
+
+    brain.Circuit.Add(aCell);
+  end;
+
+  aSprite := SE_Sprite.Create (dir_circuits + CircuitName +'.bmp','circuit',1,1,1000,0,0,false );
+
+  for i := 0 to SE_Theater1.EngineCount -1 do begin
+    SE_Theater1.Engines [i].RemoveAllSprites;
+  end;
+
+  SE_Theater1.VirtualWidth := aSprite.BMP.Width;
+  SE_Theater1.VirtualHeight := aSprite.BMP.Height;
+
+  SE_EngineBack.AddSprite( aSprite );
+  aSprite.Position := Point (  SE_Theater1.VirtualWidth div 2 , SE_Theater1.Virtualheight div 2  );
+
+end;
+
 
 end.

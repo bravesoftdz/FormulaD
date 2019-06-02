@@ -781,12 +781,12 @@ object Form1: TForm1
   object SE_EngineCars: SE_Engine
     PixelCollision = False
     IsoPriority = False
-    Priority = 0
+    Priority = 1
     Theater = SE_Theater1
     Left = 520
     Top = 736
   end
-  object SE_Engine1: SE_Engine
+  object SE_EngineBack: SE_Engine
     ClickSprites = False
     PixelCollision = False
     IsoPriority = False

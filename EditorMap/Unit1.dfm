@@ -299,15 +299,6 @@ object Form1: TForm1
     Left = 1279
     Top = 760
   end
-  object SE_Engine4: SE_Engine
-    PixelClick = True
-    PixelCollision = False
-    IsoPriority = False
-    Priority = 2
-    Theater = SE_Theater1
-    Left = 1335
-    Top = 760
-  end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
     Left = 1383

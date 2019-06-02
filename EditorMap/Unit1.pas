@@ -18,7 +18,6 @@ type
     SE_Engine2: SE_Engine;
     CnSpinEdit1: TCnSpinEdit;
     Label1: TLabel;
-    SE_Engine4: SE_Engine;
     Panel2: TPanel;
     Button1: TButton;
     Label2: TLabel;
@@ -188,17 +187,6 @@ begin
   incGuid := TotCells ;
 
   aBmp.free;
-{  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\2.bmp','cartest2',1,1,1000,470 ,564,true );
-  aSprite.Scale := 32;
-  aSprite.Angle := CircuitDescr.CarAngle ;
-
-  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\1.bmp','cartest1',1,1,1000,410 ,568,true );
-  aSprite.Scale := 86;
-  aSprite.Angle := CircuitDescr.CarAngle ;
-
-  aSprite := SE_Engine4.CreateSprite( '..\client\bmp\cars\3.bmp','cartest3',1,1,1000,350 ,568,true );
-  aSprite.Scale := 60;
-  aSprite.Angle := CircuitDescr.CarAngle ;   }
 
 
 
