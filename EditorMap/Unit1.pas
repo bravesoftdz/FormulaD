@@ -38,6 +38,8 @@ type
     CnSpinEdit6: TCnSpinEdit;
     PanelMode: TPanel;
     LabelMode: TLabel;
+    Button3: TButton;
+    Button4: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -48,12 +50,17 @@ type
     procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
     procedure Button2Click(Sender: TObject);
     procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
+    procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     { Private declarations }
     fmode : TMode;
     procedure SetMode ( aMode : Tmode );
   public
     { Public declarations }
+    function GetNextGuid: SmallInt;
+    function FindDuplicateCell ( Guid,Index: Integer): TCell;
+
     function GetCell ( Guid : SmallInt ) : TCell;
     procedure DeleteCellCircuit ( aCell : TCell ); overload;
     procedure DeleteCellCircuit ( aSprite : SE_Sprite ); overload;
@@ -109,7 +116,6 @@ begin
     mm.Write( @Circuit[i].DistStraight , SizeOf(Byte));
     mm.Write( @Circuit[i].PixelX , SizeOf(SmallInt));
     mm.Write( @Circuit[i].PixelY , SizeOf(SmallInt));
-
     TotLinkForward := Circuit[i].LinkForward.Count;
     mm.Write( @TotLinkForward, sizeof(byte) );
     for L := Circuit[i].LinkForward.Count -1 Downto 0 do begin
@@ -179,12 +185,12 @@ begin
 
     // tutte clgray all'inizio
     Circuit.Add(aCell);
-    aSprite := SE_Sprite.Create (aBmp.bitmap, IntToStr(i) ,1,1,1000,0,0,true );
+    aSprite := SE_Sprite.Create (aBmp.bitmap, IntToStr(aCell.Guid) ,1,1,1000,0,0,true );
     SE_Engine2.AddSprite( aSprite );
     aSprite.Position := Point (  aCell.PixelX , aCell.PixelY  );
 
   end;
-  incGuid := TotCells ;
+  incGuid := GetNextGuid;
 
   aBmp.free;
 
@@ -215,6 +221,61 @@ begin
 
 end;
 
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  i: Integer;
+  can : boolean;
+begin
+  for I := 0 to Circuit.Count -1 do begin
+    Circuit[i].Guid := i + 1;
+    Circuit[i].LinkForward.Clear;
+    Circuit[i].Adjacent.Clear;
+  end;
+  Button1Click(Button1);
+  can := True;
+  StringGrid2SelectCell(StringGrid2, 0,  StringGrid2.Row , Can );
+
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+var
+  i: Integer;
+  aCell:TCell;
+  label Retry;
+begin
+
+  Circuit.sort(TComparer<TCell>.Construct(
+  function (const L, R: TCell): integer
+  begin
+    Result := (L.Guid ) - (R.Guid  );
+  end
+  ));
+
+Retry:
+  for I := Circuit.Count -1 downto 0 do begin
+    aCell := FindDuplicateCell (Circuit[i].Guid, I );
+    if aCell <> nil then begin
+      Circuit.Delete( i );
+      goto retry;
+    end;
+  end;
+
+  ShowMessage(('done!'));
+end;
+function TForm1.FindDuplicateCell ( Guid,Index: Integer): TCell;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for I := Circuit.Count -1 downto 0 do begin
+    if i = Index then Continue;
+    if Circuit[i].Guid = Guid then begin
+      Result := Circuit[i];
+      Exit;
+    end;
+  end;
+
+end;
 procedure TForm1.SetMode ( aMode : Tmode );
 var
   aColor : TColor;
@@ -527,7 +588,7 @@ begin
       aBmp.Bitmap.Canvas.Ellipse(2,2,16,16);
 
       aSprite := SE_Sprite.Create (aBmp.bitmap, IntToStr(incGuid) ,1,1,1000,0,0,true );
-      inc ( incGuid );
+      incGuid := GetNextGuid;
       SE_Engine2.AddSprite( aSprite );
       aSprite.Position := Point (  VirtualX , VirtualY  );
       SelectCell ( aSprite );
@@ -576,7 +637,7 @@ begin
       Break;
     end;
   end;
-  incGuid := Circuit.Count;
+  incGuid := GetNextGuid;
 
 end;
 procedure TForm1.DeleteCellCircuit ( aSprite : SE_Sprite );
@@ -591,7 +652,30 @@ begin
       Break;
     end;
   end;
-  incGuid := Circuit.Count;
+  incGuid := GetNextGuid;
+
+end;
+function TForm1.GetNextGuid: SmallInt;
+var
+  i: Integer;
+begin
+  Result := Circuit.Count + 1;
+
+  Circuit.sort(TComparer<TCell>.Construct(
+  function (const L, R: TCell): integer
+  begin
+    Result := (L.Guid ) - (R.Guid  );
+  end
+  ));
+
+  for I := 0 to Circuit.Count -2 do begin
+    if Circuit[i].Guid <> i + 1 then begin
+      result := i + 1;
+      Exit;
+    end;
+
+  end;
+
 
 end;
 procedure TForm1.SelectCell ( aSprite : SE_Sprite );
@@ -666,9 +750,9 @@ begin
   SE_Theater1.Active := True;
 
   Mode := modePanZoom;
-  incGuid := 0;
   PanelLoad.Visible := False;
   LoadCircuit ( JustNameL( StringGrid2.Cells[0,aRow]))  ;
+  incGuid := GetNextGuid;
   Mode := modePanZoom;
 end;
 
@@ -786,11 +870,13 @@ procedure TForm1.ShowStartingGrid;
 var
   i: Integer;
   aSprite: SE_Sprite;
+  aCell : TCell;
 begin
   ResetSpriteCells;
   for i := Circuit.Count -1 downto 0 do begin
-    if Circuit[i].StartingGrid <> 0 then begin
-      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+    aCell := Circuit[i];
+    if aCell.StartingGrid <> 0 then begin
+      aSprite := SE_Engine2.FindSprite( IntToStr(aCell.Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clBlack;
       aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clWhite;
@@ -799,7 +885,7 @@ begin
       aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
       aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
-      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].StartingGrid ));
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(aCell.StartingGrid ));
     end;
   end;
 

@@ -281,6 +281,25 @@ object Form1: TForm1
       ParentFont = False
     end
   end
+  object Button3: TButton
+    Left = 1214
+    Top = 742
+    Width = 75
+    Height = 25
+    Caption = 'Reset Guid'
+    TabOrder = 10
+    Visible = False
+    OnClick = Button3Click
+  end
+  object Button4: TButton
+    Left = 1322
+    Top = 742
+    Width = 75
+    Height = 25
+    Caption = 'Remove Duplicate'
+    TabOrder = 11
+    OnClick = Button4Click
+  end
   object SE_Engine1: SE_Engine
     ClickSprites = False
     PixelCollision = False
