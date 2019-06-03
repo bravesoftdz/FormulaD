@@ -9,6 +9,8 @@ uses
 
   formulaDBrain,
 
+  ZLIBEX,
+
   DSE_Panel,
   DSE_Misc,
   DSE_theater,
@@ -99,10 +101,10 @@ type
     procedure btnExitClick(Sender: TObject);
     procedure btnCancelGameClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure tcpDataAvailable(Sender: TObject; ErrCode: Word);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
-    procedure ResetSetupWeather;
     procedure SelectSetupWeather ( Col : Integer );
     procedure ResetSetupQual;
     procedure SelectSetupQual ( Col : Integer );
@@ -114,20 +116,21 @@ type
     procedure CarSpritesReset ( StartingGrid : Boolean );
   public
     { Public declarations }
+    procedure ResetSetupWeather  ( aGridWeather: Se_grid);
   end;
 
   const EndofLine = 'ENDFD';
 
 var
   Form1: TForm1;
-  dir_bmpWeather, dir_Cars, dir_Circuits: string;
+  dir_tmp, dir_bmpWeather, dir_Cars, dir_Circuits: string;
   CarBmp : array[1..10] of TCarBmp;
   RowPlayer: Integer; // per il cambio di colore
   Brain: TFormulaDBrain;
   mm : TMemoryStream;
 
 implementation
-
+uses Unit3;
 {$R *.dfm}
 
 function RemoveEndOfLine(const Line : String) : String;
@@ -174,6 +177,8 @@ end;
 
 procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
+  Form3.Show;
+  Form1.ResetSetupWeather ( Form3.SE_GridWeather );
   PanelCreateGame.Visible := True;
   PanelMain.Visible := False;
   SelectSetupWeather (4);
@@ -237,14 +242,18 @@ begin
 
     if Brain.Qualifications = QualLap then begin
 
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          TcpServer.Client[i].SendStr( 'setupq,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
+      end;
+
     end
     else if Brain.Qualifications = QualRnd then begin
       // random StartGrid
       Brain.CreateRndStartingGrid;
 
-    for I := 0 to Tcpserver.ClientCount -1 do begin
-        TcpServer.Client[i].SendStr( 'setupq' + EndOfLine );  // non può modificare nulla della macchina, ma viene mostrato il weather
-    end;
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          TcpServer.Client[i].SendStr( 'setupr,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
+      end;
 
       CarSpritesReset ( True ); // starting grid angle
 
@@ -454,6 +463,7 @@ begin
   mm := TMemoryStream.Create;
   Brain := TFormulaDBrain.Create;
 
+  dir_tmp :=  ExtractFilePath (Application.ExeName)+ 'tmp\';
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
   dir_Circuits := ExtractFilePath (Application.ExeName)+'circuits\';
   dir_bmpWeather :=  ExtractFilePath (Application.ExeName)+ 'bmp\Weather\';
@@ -531,58 +541,58 @@ begin
   Brain.Free;
 end;
 
-procedure TForm1.ResetSetupWeather;
+procedure TForm1.ResetSetupWeather ( aGridWeather: Se_grid);
 var
   bmp : SE_bitmap;
 begin
-  SE_GridWeather.ClearData;   // importante anche pr memoryleak
-  SE_GridWeather.DefaultColWidth := 51;
-  SE_GridWeather.DefaultRowHeight := 24;
-  SE_GridWeather.ColCount := 5;
-  SE_GridWeather.RowCount := 1;
-  SE_GridWeather.Columns[0].Width := 51;
-  SE_GridWeather.Columns[1].Width := 51;
-  SE_GridWeather.Columns[2].Width := 51;
-  SE_GridWeather.Columns[3].Width := 51;
-  SE_GridWeather.Columns[4].Width := 51;
-  SE_GridWeather.Rows[0].Height := 24;
+  aGridWeather.ClearData;   // importante anche pr memoryleak
+  aGridWeather.DefaultColWidth := 51;
+  aGridWeather.DefaultRowHeight := 24;
+  aGridWeather.ColCount := 5;
+  aGridWeather.RowCount := 1;
+  aGridWeather.Columns[0].Width := 51;
+  aGridWeather.Columns[1].Width := 51;
+  aGridWeather.Columns[2].Width := 51;
+  aGridWeather.Columns[3].Width := 51;
+  aGridWeather.Columns[4].Width := 51;
+  aGridWeather.Rows[0].Height := 24;
 
-  SE_GridWeather.Height := 24;
-  SE_GridWeather.Width := 51*5;
+  aGridWeather.Height := 24;
+  aGridWeather.Width := 51*5;
 
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '0.bmp' );
   bmp.Stretch(51,24);
-  SE_GridWeather.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '1.bmp' );
   bmp.Stretch(51,24);
-  SE_GridWeather.AddSE_Bitmap ( 1, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 1, 0, 1 , bmp, false );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '2.bmp' );
   bmp.Stretch(51,24);
-  SE_GridWeather.AddSE_Bitmap ( 2, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 2, 0, 1 , bmp, false );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '3.bmp' );
   bmp.Stretch(51,24);
-  SE_GridWeather.AddSE_Bitmap ( 3, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 3, 0, 1 , bmp, false );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + 'r.bmp' );
   bmp.Stretch(51,24);
-  SE_GridWeather.AddSE_Bitmap ( 4, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 4, 0, 1 , bmp, false );
   bmp.Free;
 
-  SE_GridWeather.CellsEngine.ProcessSprites(20);
-  SE_GridWeather.RefreshSurface ( SE_GridWeather );
+  aGridWeather.CellsEngine.ProcessSprites(20);
+  aGridWeather.RefreshSurface ( aGridWeather );
 
 end;
 procedure TForm1.SelectSetupWeather ( Col : integer);
 begin
-  ResetSetupWeather;
+  ResetSetupWeather ( SE_GridWeather ) ;
   SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
   SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
   SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
@@ -684,6 +694,210 @@ procedure TForm1.SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouse
 begin
   SelectSetupWeather ( CellX );
 end;
+procedure TForm1.tcpDataAvailable(Sender: TObject; ErrCode: Word);
+var
+  I, LEN, totalString: Integer;
+  Buf     : array [0..8191] of AnsiChar;
+  ini : Tinifile;
+  Ts: TstringList;
+  filename,tmpStr: string;
+  MMbraindata: TMemoryStream;
+  MMbraindataZIP: TMemoryStream;
+  SignaturePK : string;
+  SignatureBEGINBRAIN: string ;
+  DeCompressedStream: TZDecompressionStream;
+  s1,s2,s3,s4,InBuffer: string;
+  MM,MM2 : TMemoryStream;
+  label firstload;
+begin
+ //   MMbraindata:= TMemoryStream.Create;
+ //   MMbrainData.Size := TWSocket(Sender).BufSize;
+ //   Len := TWSocket(Sender).Receive(MMbrainData.Memory , TWSocket(Sender).BufSize );
+ //   SetString(aaa, PAnsiChar( MMbrainData.Memory ), MMbraindata.Size ); //div SizeOf(Char));
+ //   MMbraindata.Free;
+//    Len := TCustomLineWSocket(Sender).Receive(@Buf, Sizeof(Buf) - 1);
+
+    // arrivano dati compressi solo dopo beginbrain e beginteam
+
+    MM := TMemoryStream.Create;  // potrebbe anche non servire a nulla
+    MM.Size := Sizeof(Buf) - 1;
+    Len := TWSocket(Sender).Receive( MM.Memory,  Sizeof(Buf) - 1);
+    CopyMemory( @Buf, MM.Memory, Len  ); // metto nel buffer per i comandi non compressi
+    TWSocket(Sender).DeleteBufferedData ;
+//    Len := TWSocket(Sender).Receive(@Buf, Sizeof(Buf) - 1);
+
+    if Len <= 0 then begin
+      MM.Free;
+      Exit;
+    end;
+
+    // COMPRESSED PACKED
+    { string(buf) mi tronca la stringa zippata }
+ //   SetLength( dataStr ,  Len - 19 );
+    tmpStr := String(Buf);
+    if MidStr( tmpStr,1,4 )= 'GUID' then begin  // guid,guidteam,teamname,nextha,mi
+  //    dal server arriva una prima parte stringa e poi uno stream compresso:
+  //    Cli.SendStr( 'GUID,' + IntToStr(Cli.GuidTeam ) + ',' + Cli.teamName  + ',' + intToStr(Cli.nextHA) +',' + intToStr(Cli.mi) + ',' +
+  //    'BEGINBRAIN' +  chr ( abrain.incMove )   +  brainManager.GetBrainStream ( abrain ) + EndofLine);
+
+{      MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
+      viewMatch := false;
+      LiveMatch := true;
+      s1 := ExtractWordL (2, tmpStr, ',');
+      s2 := ExtractWordL (3, tmpStr, ',');
+      s3 := ExtractWordL (4, tmpStr, ',');
+      s4 := ExtractWordL (5, tmpStr, ',');
+      MyGuidTeam :=  StrToInt(s1);
+      MyGuidTeamName :=  s2;
+
+
+      TotalString := 4 + 5 + Length (s1) + Length (s2) +Length (s3) +Length (s4) ; //4 è la lunghezza di 'GUID' e 5 sono le virgole
+      LastTcpIncMove := ord (buf [TotalString + 10 ]); // 10 è lunghezza di BEGINBRAIN. mi posiziono sul primo byte che indica IncMove
+      MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
+
+      MM2:= TMemoryStream.Create;
+      MM2.Write( buf[  TotalString + 11 ] , len - 11 - TotalString ); // elimino s4 e incmove 11 -11. e prima elimino la parte stringa
+      DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
+
+
+      MM3[LastTcpIncMove].Clear;
+      MM3[LastTcpIncMove].CopyFrom ( DeCompressedStream, 0);
+      MM2.free;     // endsoccer si perde da solo decomprimendo
+      DeCompressedStream.Free;
+      CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
+      MM3[LastTcpIncMove].SaveToFile( dir_data + IntToStr(LastTcpIncMove) + '.IS');
+//      goto firstload;
+      if not FirstLoadOK  then begin   // avvio partita o ricollegamento
+       // AnimationScript.Reset;
+        InitializeTheaterMatch;
+        SE_interface.RemoveAllSprites;
+        GameScreen:= ScreenLiveMatch; // initializetheatermAtch
+        CurrentIncMove := LastTcpIncMove;
+        ClientLoadBrainMM (CurrentIncMove, true) ;   // (incmove)
+        FirstLoadOK := True;
+
+        if ViewReplay then ToolSpin.Visible := True;
+        for I := 0 to 255 do begin
+         incMoveAllProcessed [i] := false;
+         incMoveReadTcp [i] := false;
+        end;
+        for I := 0 to CurrentIncMove do begin
+         incMoveAllProcessed [i] := true; // caricato e completamente eseguito
+         incMoveReadTcp [i] := true;
+        end;
+
+
+        SpriteReset;
+        // se è la prima volta, ricevo una partita terminata
+        if (mybrain.finished) then begin //and   (Mybrain.Score.TeamGuid [0]  = MyGuidTeam ) or (Mybrain.Score.TeamGuid [1]  = MyGuidTeam ) then begin
+          ShowMatchInfo;
+        end
+        else
+          ThreadCurMove.Enabled := true; // eventuale splahscreen compare tramite tsscript e obbliga al pulsante exit. 30 seconplay se c'è il suo guidteam
+      end;
+
+      MM.Free;
+      Exit;    }
+    end
+    else if MidStr( tmpStr,1,10 )= 'BEGINBRAIN' then begin   // il byte incmove nella stringa
+
+
+{        MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
+
+        LastTcpIncMove := ord (buf [10]);
+        MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
+
+        // elimino beginbrain
+        MM2:= TMemoryStream.Create;
+        MM2.Write( buf[11] , len - 11 ); // elimino beginbrain   e incmove 11 -11
+
+        // su mm3 ho 9c78 compressed
+         DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
+  //       mm3[incmove].clearM
+         MM3[LastTcpIncMove].Clear;
+  //       DeCompressedStream.Position := 0;
+         MM3[LastTcpIncMove].CopyFrom ( DeCompressedStream, 0);
+         MM2.free;     // endsoccer si perde da solo decomprimendo
+         DeCompressedStream.Free;
+  //      CopyMemory( @Buf3, mm3.Memory , mm3.size  ); // copia del buf per non essere sovrascritti
+        CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
+        MM3[LastTcpIncMove].SaveToFile( dir_data + IntToStr(LastTcpIncMove) + '.IS');
+    firstload:
+        if viewMatch or LiveMatch then begin
+          if not FirstLoadOK  then begin   // avvio partita o ricollegamento. se è la prima volta
+            InitializeTheaterMatch;
+            GameScreen:= ScreenLiveMatch; // initializetheatermAtch
+            CurrentIncMove := LastTcpIncMove;
+            ClientLoadBrainMM (CurrentIncMove, true) ;   // (incmove)
+            FirstLoadOK := True;
+            for I := 0 to 255 do begin
+             incMoveAllProcessed [i] := false;
+             incMoveReadTcp [i] := false;
+            end;
+            for I := 0 to CurrentIncMove do begin
+             // caricato e completamente eseguito
+             incMoveAllProcessed [i] := true;
+             incMoveReadTcp [i] := true;
+            end;
+
+
+            SpriteReset;
+            ThreadCurMove.Enabled := true;
+
+          end;
+
+        end;
+          MM.Free;
+          Exit;             }
+    end
+    else if MidStr(tmpStr,1,9 )= 'BEGINTEAM' then begin
+
+{      ThreadCurMove.Enabled := false; // parte solo in beginbrain
+      MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
+
+      // elimino beginbrain
+      MM2:= TMemoryStream.Create;
+      MM2.Write( buf[9] , len - 9 ); // elimino beginteam
+
+      // su mm3 ho 9c78 compressed
+       DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
+       MM3[0].Clear;
+//       DeCompressedStream.Position := 0;
+       MM3[0].CopyFrom ( DeCompressedStream, 0);
+       MM2.free;     // endsoccer si perde da solo decomprimendo
+       DeCompressedStream.Free;
+      CopyMemory( @Buf3[0][0], mm3[0].Memory , mm3[0].size  ); // copia del buf per non essere sovrascritti
+      GameScreen := ScreenFormation;
+
+      ClientLoadFormation;
+      MM.Free;
+      Exit;       }
+    end;
+
+//    ThreadCurMove.Enabled := false; // parte solo in beginbrain
+//    MemoC.Lines.Add( 'normal size: ' + IntToStr(Len) );
+
+    Ts:= Tstringlist.Create ;
+    Ts.StrictDelimiter := True;
+    ts.CommaText := RemoveEndOfLine(String(Buf));
+ //   MemoC.Lines.Add('<---Tcp:'+ Ts.CommaText);
+    if rightstr(ts[0],4) = 'guid' then begin
+
+    end
+    else if  ts[0] = 'setupq' then begin
+      if Ts[1] = '0' then
+        Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
+        else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
+      Form3.setupQ;
+      Form3.Show;
+    end;
+
+    ts.Free;
+    MM.Free;
+
+
+end;
+
 procedure TForm1.TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
 begin
 //

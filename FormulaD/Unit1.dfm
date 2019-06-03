@@ -713,6 +713,7 @@ object Form1: TForm1
     SocksLevel = '5'
     ExclusiveAddr = False
     ComponentOptions = []
+    OnDataAvailable = tcpDataAvailable
     OnSessionConnected = tcpSessionConnected
     SocketErrs = wsErrTech
     Left = 39
