@@ -40,6 +40,7 @@ type
     LabelMode: TLabel;
     Button3: TButton;
     Button4: TButton;
+    Button5: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -52,6 +53,7 @@ type
     procedure StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   private
     { Private declarations }
     fmode : TMode;
@@ -226,15 +228,19 @@ var
   i: Integer;
   can : boolean;
 begin
-  for I := 0 to Circuit.Count -1 do begin
-    Circuit[i].Guid := i + 1;
-    Circuit[i].LinkForward.Clear;
-    Circuit[i].Adjacent.Clear;
-  end;
-  Button1Click(Button1);
-  can := True;
-  StringGrid2SelectCell(StringGrid2, 0,  StringGrid2.Row , Can );
 
+  if Application.MessageBox('LinkForward and Adjacent will be cleared. Are you Sure?',
+			   'Warning!', MB_YESNO) = ID_YES then begin
+
+    for I := 0 to Circuit.Count -1 do begin
+      Circuit[i].Guid := i + 1;
+      Circuit[i].LinkForward.Clear;
+      Circuit[i].Adjacent.Clear;
+    end;
+    Button1Click(Button1);
+    can := True;
+    StringGrid2SelectCell(StringGrid2, 0,  StringGrid2.Row , Can );
+  end;
 end;
 
 procedure TForm1.Button4Click(Sender: TObject);
@@ -754,6 +760,10 @@ begin
   LoadCircuit ( JustNameL( StringGrid2.Cells[0,aRow]))  ;
   incGuid := GetNextGuid;
   Mode := modePanZoom;
+
+  Button3.Visible := True;
+  Button4.Visible := True;
+  Button5.Visible := True;
 end;
 
 procedure TForm1.ShowAdjacent ( MainSprite: SE_Sprite );
@@ -954,4 +964,30 @@ begin
   end;
 
 end;
+procedure TForm1.Button5Click(Sender: TObject);
+var
+  i: Integer;
+  aCell:TCell;
+  label Retry;
+begin
+
+  Circuit.sort(TComparer<TCell>.Construct(
+  function (const L, R: TCell): integer
+  begin
+    Result := (L.Guid ) - (R.Guid  );
+  end
+  ));
+
+Retry:
+  for I := Circuit.Count -1 downto 0 do begin
+    if Circuit[i].Guid <> i + 1 then begin
+      ShowMessage('Check failed' );
+      Exit;
+    end;
+  end;
+
+  ShowMessage(('done! Integrity OK'));
+end;
+
+
 end.

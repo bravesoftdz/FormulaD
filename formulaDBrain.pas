@@ -54,7 +54,7 @@ type TFormulaDBrain = class
 //    CarSetup : TCarSetup;
     RandGen: TtdBasePRNG;
     Qualifications: TQualifications;
-    Wheater : Integer;
+    Weather : Integer;
     lstCars: TObjectList<TCar>;
     Circuit : TObjectList<TCell>;
     CircuitDescr: TCircuitDescr;

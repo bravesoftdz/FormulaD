@@ -298,7 +298,18 @@ object Form1: TForm1
     Height = 25
     Caption = 'Remove Duplicate'
     TabOrder = 11
+    Visible = False
     OnClick = Button4Click
+  end
+  object Button5: TButton
+    Left = 1322
+    Top = 773
+    Width = 75
+    Height = 25
+    Caption = 'Check Integrity'
+    TabOrder = 12
+    Visible = False
+    OnClick = Button5Click
   end
   object SE_Engine1: SE_Engine
     ClickSprites = False

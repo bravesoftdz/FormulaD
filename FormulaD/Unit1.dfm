@@ -327,7 +327,7 @@ object Form1: TForm1
       TabOrder = 1
       OnCloseUp = cbLapsCloseUp
     end
-    object SE_GridWheater: SE_Grid
+    object SE_GridWeather: SE_Grid
       Left = 64
       Top = 56
       Width = 256
@@ -355,7 +355,7 @@ object Form1: TForm1
       Virtualheight = 212
       Passive = True
       TabOrder = 2
-      OnGridCellMouseDown = SE_GridWheaterGridCellMouseDown
+      OnGridCellMouseDown = SE_GridWeatherGridCellMouseDown
       CellBorder = CellBorderNone
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -602,8 +602,8 @@ object Form1: TForm1
     end
   end
   object PanelCarSetup: SE_Panel
-    Left = 53
-    Top = 740
+    Left = 37
+    Top = 452
     Width = 241
     Height = 125
     BevelOuter = bvNone
