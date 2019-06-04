@@ -242,6 +242,8 @@ begin
 
     if Brain.Qualifications = QualLap then begin
 
+      Brain.Stage := StageSetupQ;
+      { TODO : savedata brain e invio al client. nessun comando }
       for I := 0 to Tcpserver.ClientCount -1 do begin
           TcpServer.Client[i].SendStr( 'setupq,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
       end;
@@ -250,6 +252,7 @@ begin
     else if Brain.Qualifications = QualRnd then begin
       // random StartGrid
       Brain.CreateRndStartingGrid;
+      Brain.Stage := StageSetupRace;
 
       for I := 0 to Tcpserver.ClientCount -1 do begin
           TcpServer.Client[i].SendStr( 'setupr,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
