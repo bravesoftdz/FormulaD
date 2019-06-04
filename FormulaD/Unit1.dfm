@@ -796,4 +796,10 @@ object Form1: TForm1
     Left = 455
     Top = 736
   end
+  object ThreadCurMove: SE_ThreadTimer
+    Interval = 300
+    KeepAlive = True
+    Left = 256
+    Top = 746
+  end
 end

@@ -7,9 +7,9 @@ uses DSE_list, generics.collections, generics.defaults, system.classes, System.S
   DSE_Theater, DSE_Random;
 
 const StageSetupQ = 0;
-const StageSetupRace = 1;
-const Qualifications = 2;
-const Race = 3;
+const StageQualifications = 1;
+const StageSetupRace = 2;
+const StageRace = 3;
 
 const QualLap = 0;
 const QualRnd = 1;
@@ -57,7 +57,7 @@ type TCar = Class
   SE_Sprite : SE_Sprite;
   Path : TList<TPoint>;
 
-  Tire : ShortInt;
+  Tires : ShortInt;
   Brakes: ShortInt;
   Gear: ShortInt;
   Body: ShortInt;
@@ -76,6 +76,7 @@ type TFormulaDBrain = class
 //    CarSetup : TCarSetup;
     MMbraindata,MMbraindataZIP: TMemoryStream;
     RandGen: TtdBasePRNG;
+    ServerIncMove : Integer;
 
     Qualifications: Byte;
     WeatherStart: Byte;
@@ -212,12 +213,11 @@ end;
 procedure TFormulaDBrain.SaveData ( CurMove: Integer ) ;
 var
   ISMARK : array [0..1] of ansichar;
-  i,p,pcount: integer;
+  i,p: integer;
   totCars,CarGuid, totPath: Byte;
   tmp: string;
-  tmpShort: Shortstring;
-  FKblock: Byte;
   tmpStream, MM : TMemoryStream;
+  PathX, PathY : Integer;
   str : AnsiString;
   CompressedStream: TZCompressionStream;
   DeCompressedStream: TZDeCompressionStream;
@@ -229,7 +229,7 @@ begin
   // lstcar.count
   // lista car
   // (l'animazione è il path della Car)
-  // Info --> crash, consumo freni, gomme, eliminazione, cambio clima ecc....
+  // Info --> crash, consumo freni, gomme, eliminazione, cambio clima ecc.... e mappa dei debris
   ISMARK [0] := 'I';
   ISMARK [1] := 'S';
   MMbraindata.Clear;
@@ -250,36 +250,32 @@ begin
   for i := 0 to lstCars.Count -1 do begin
     MMbraindata.Write( @lstCars[i].Guid, sizeof(Byte) );
     MMbraindata.Write( @lstCars[i].Username [0], length ( lstCars[i].Username) +1 );      // +1 byte 0 indica lunghezza stringa
-    MMbraindata.Write( @lstCars[i].CarColor, sizeof(Byte) );  // il box sulla mappa sul quale mi devo fermare
+    MMbraindata.Write( @lstCars[i].CarColor, sizeof(Byte) );  // il bmp
+    MMbraindata.Write( @lstCars[i].Box, sizeof(Byte) );  // il box sulla mappa sul quale mi devo fermare
+    MMbraindata.Write( @lstCars[i].Cell.Guid, sizeof(SmallInt) );
+    MMbraindata.Write( @lstCars[i].Tires, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].Brakes, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].Gear, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].Body, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].Engine, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].Suspension, sizeof(ShortInt) );
 
-    {
-  AI: Boolean;
-
-  Cell :TCell;
-  Box : Byte;
-  SE_Sprite : SE_Sprite;
-  Path : TList<TPoint>;
-
-  Tire : ShortInt;
-  Brakes: ShortInt;
-  Gear: ShortInt;
-  Body: ShortInt;
-  Engine: ShortInt;
-  Suspension: ShortInt;
-{
-    TotPath := Byte;
-    MMbraindata.Write( @TotPath, sizeof(Byte) );
-    for I := 0 to lstCars[i].Path.Count -1 do begin
-      MMbraindata.Write( @lstCars[i].Path[p].X , sizeof(integer) );
-      MMbraindata.Write( @lstCars[i].Path[p].Y , sizeof(integer) );
+    totPath := lstCars[i].Path.Count;
+    MMbraindata.Write( @totPath, sizeof(Byte) );
+    for p := 0 to totPath -1 do begin
+      PathX := lstCars[i].Path[p].X;
+      PathY := lstCars[i].Path[p].X;
+      MMbraindata.Write( @PathX, sizeof(Integer) );
+      MMbraindata.Write( @PathY, sizeof(Integer) );
     end;
-         }
+
   end;
 
+  // note
 
   MMbraindata.Write( @ISMARK[0], 2 );
 
-//    MMbraindata.SaveToFile( dir_log +  brainIds  + '\' + Format('%.*d',[3, incMove]) + '.IS'  );
+// if log   MMbraindata.SaveToFile( dir_log +  brainIds  + '\' + Format('%.*d',[3, incMove]) + '.IS'  );
 end;
 
 

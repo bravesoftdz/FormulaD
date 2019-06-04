@@ -20,7 +20,7 @@ uses
   OverbyteIcsWndControl,
   OverbyteIcsWSocket,
   OverbyteIcsWSocketS,
-  OverbyteIcsWSocketTS;
+  OverbyteIcsWSocketTS, DSE_ThreadTimer;
 
 
 type TCarBmp = record
@@ -76,6 +76,7 @@ type
     SE_Theater1: SE_Theater;
     SE_EngineBack: SE_Engine;
     btnCancelGame: TCnSpeedButton;
+    ThreadCurMove: SE_ThreadTimer;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure btnStartServerClick(Sender: TObject);
@@ -114,8 +115,10 @@ type
     function FindCarBmpPos ( Pos : Integer ): pTCarBmp;
     procedure ConnectClient;
 
+    function GetbrainStream ( brain: TFormulaDBrain) : string;
     procedure LoadCircuit ( CircuitName: string );
     procedure LoadBrain   ( incMove: Byte; FirstTime: boolean );
+    function GetCell ( Guid : SmallInt ) : TCell;
     procedure CarSpritesReset ( StartingGrid : Boolean );
   public
     { Public declarations }
@@ -245,23 +248,24 @@ begin
     LoadCircuit (cbCircuit.text ) ; // le car sono già caricate anche come sprite
 
     if Brain.Qualifications = QualLap then begin
-
+      Brain.ServerIncMove := 0;
       Brain.Stage := StageSetupQ;
-
     end
     else if Brain.Qualifications = QualRnd then begin
       // random StartGrid
       Brain.CreateRndStartingGrid;
-      Brain.Stage := StageSetupRace;
-
+      Brain.ServerIncMove := 0;
+//      Brain.Stage := StageSetupRace;
+      Brain.Stage :=StageQualifications;
 
       PanelCreateGame.Visible := False;
       SE_Theater1.Active := True;
       SE_Theater1.Visible := True;
     end;
 
+    Brain.SaveData ( Brain.ServerIncMove ) ;
     for I := 0 to Tcpserver.ClientCount -1 do begin
-        TcpServer.Client[i].SendStr( 'BEGINBRAIN,'  +  EndOfLine );
+        TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  ) +  GetbrainStream ( brain ) + EndOfLine );
     end;
 
   end;
@@ -271,18 +275,14 @@ var
   i,StartAngle: Integer;
   ini : TIniFile;
 begin
-  if StartingGrid then begin
-    ini := TIniFile.Create( dir_circuits + Brain.CircuitDescr.Name + '.ini' );
-    brain.CircuitDescr.CarAngle := ini.ReadInteger('setup','CarAngle',0);
-    ini.Free;
-  end;
 
   for I := 0 to brain.lstCars.Count -1 do begin
     Brain.lstCars[i].SE_Sprite.PositionX := Brain.lstCars[i].Cell.PixelX;
     Brain.lstCars[i].SE_Sprite.PositionY := Brain.lstCars[i].Cell.PixelY;
-    if StartingGrid then begin
+    { TODO : angle }
+    //    if StartingGrid then begin
       Brain.lstCars[i].SE_Sprite.Angle := brain.CircuitDescr.CarAngle;
-    end;
+//    end;
     Brain.lstCars[i].SE_Sprite.Visible := True;
   end;
 end;
@@ -464,7 +464,11 @@ begin
   SE_Theater1.Visible := False;
 
   mm := TMemoryStream.Create;
+  for I := 0 to 255 do begin
+    MM3[i]:= TMemoryStream.Create;
+  end;
   Brain := TFormulaDBrain.Create;
+
 
   dir_tmp :=  ExtractFilePath (Application.ExeName)+ 'tmp\';
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
@@ -539,8 +543,13 @@ begin
 
 end;
 procedure TForm1.FormDestroy(Sender: TObject);
+var
+  i: Integer;
 begin
   mm.Free;
+  for I := 0 to 255 do begin
+    MM3[i].Free;
+  end;
   Brain.Free;
 end;
 
@@ -699,17 +708,13 @@ begin
 end;
 procedure TForm1.tcpDataAvailable(Sender: TObject; ErrCode: Word);
 var
-  I, LEN, totalString: Integer;
+  LEN : Integer;
   Buf     : array [0..8191] of AnsiChar;
   ini : Tinifile;
-  Ts: TstringList;
-  filename,tmpStr: string;
+  tmpStr: string;
   MMbraindata: TMemoryStream;
   MMbraindataZIP: TMemoryStream;
-  SignaturePK : string;
-  SignatureBEGINBRAIN: string ;
   DeCompressedStream: TZDecompressionStream;
-  s1,s2,s3,s4,InBuffer: string;
   MM,MM2 : TMemoryStream;
   label firstload;
 begin
@@ -740,10 +745,10 @@ begin
     tmpStr := String(Buf);
     if MidStr( tmpStr,1,10 )= 'BEGINBRAIN' then begin   // il byte incmove nella stringa
 
-{        MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
+//        MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
 
         LastTcpIncMove := ord (buf [10]);
-        MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
+//        MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
 
         // elimino beginbrain
         MM2:= TMemoryStream.Create;
@@ -759,54 +764,30 @@ begin
          DeCompressedStream.Free;
   //      CopyMemory( @Buf3, mm3.Memory , mm3.size  ); // copia del buf per non essere sovrascritti
         CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
-        MM3[LastTcpIncMove].SaveToFile( dir_data + IntToStr(LastTcpIncMove) + '.IS');
+        MM3[LastTcpIncMove].SaveToFile( dir_tmp + IntToStr(LastTcpIncMove) + '.IS');
     firstload:
-        if viewMatch or LiveMatch then begin
           if not FirstLoadOK  then begin   // avvio partita o ricollegamento. se è la prima volta
-            InitializeTheaterMatch;
-            GameScreen:= ScreenLiveMatch; // initializetheatermAtch
             CurrentIncMove := LastTcpIncMove;
             LoadBrain (CurrentIncMove, true) ;   // (incmove)
             FirstLoadOK := True;
-            for I := 0 to 255 do begin
-             incMoveAllProcessed [i] := false;
-             incMoveReadTcp [i] := false;
-            end;
-            for I := 0 to CurrentIncMove do begin
-             // caricato e completamente eseguito
-             incMoveAllProcessed [i] := true;
-             incMoveReadTcp [i] := true;
-            end;
 
-
-            SpriteReset;
+            CarSpritesReset ( False );
             ThreadCurMove.Enabled := true;
 
           end;
 
-        end;
           MM.Free;
-          Exit;             }
+          Exit;
     end;
 
 //    MemoC.Lines.Add( 'normal size: ' + IntToStr(Len) );
 
-    Ts:= Tstringlist.Create ;
-    Ts.StrictDelimiter := True;
-    ts.CommaText := RemoveEndOfLine(String(Buf));
- //   MemoC.Lines.Add('<---Tcp:'+ Ts.CommaText);
-    if rightstr(ts[0],4) = 'guid' then begin
-
-    end
-    else if  ts[0] = 'setupq' then begin
-      if Ts[1] = '0' then
+      if Brain.Track = TrackDry then
         Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
         else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
       Form3.setupQ;
       Form3.Show;
-    end;
 
-    ts.Free;
     MM.Free;
 
 
@@ -815,23 +796,16 @@ procedure TForm1.LoadBrain   ( incMove: Byte; FirstTime: boolean );
 var
   SS : TStringStream;
   lenCircuitName, lenUsername, aCarColor: byte;
-  lenMatchInfo: word;
-  dataStr,tmpStr: string;
+  dataStr: string;
   Cur: Integer;
-  totCars,CarGuid, totPath: Byte;
-  aSEField, aSprite: se_Sprite;
-  i,ii , aAge,aCellX,aCellY,aBox,aGuid,nMatchesPlayed,nMatchesLeft,pcount,rndY,aStamina: integer;
-  DefaultCellX,DefaultCellY: ShortInt;
-  TalentID1,TalentID2: Byte;
+  totCars, totPath: Byte;
+  aSprite: se_Sprite;
+  aCellGuid : SmallInt;
+  i,ii , aCellX,aCellY: integer;
+  aGuid,aBox,aTires,aBrakes,aGear,aBody,anEngine,aSuspension: Byte;
+  aCell: TCell;
   aPoint : TPoint;
-  aName, aUserName,  Attributes,aIds: string;
-  bmp: se_Bitmap;
-  PenaltyCell: TPoint;
-  bmp1: SE_Bitmap;
-  Injured: Integer;
-  ACellBarrier,TvReserveCell: TPoint;
-  DefaultSpeed, DefaultDefense , DefaultPassing, DefaultBallControl, DefaultShot, DefaultHeading: Byte;
-  Speed, Defense , Passing, BallControl, Shot, Heading: ShortInt;
+  aUserName: string;
   aCar : TCar;
 begin
 
@@ -845,13 +819,11 @@ begin
   SS.Size := MM3[incMove].Size;
   MM3[incMove].Position := 0;
   ss.CopyFrom( MM3[incMove], MM3[incMove].size );
-  //    dataStr := RemoveEndOfLine(string(buf));
   dataStr := SS.DataString;
   SS.Free;
 
   if RightStr(dataStr,2) <> 'IS' then Exit;
 
-  // a 0 c'è la word che indica dove comincia tsScript
   cur := 0;
   lenCircuitName:=  Ord( buf3[incMove] [ cur ]);                 // ragiona in base 0
   Brain.CircuitDescr.name := MidStr( dataStr, cur + 2  , lenCircuitName );// ragiona in base 1
@@ -884,11 +856,6 @@ begin
 //  MyBrain.Score.Country [1] :=  PWORD(@buf3[incMove][ cur ])^;
 //  cur := cur + 2 ;
 
-
-//  LocalSeconds  :=  Ord( buf3[incMove][ cur ]);
-//  MyBrain.fmilliseconds :=  (PWORD(@buf3[incMove][ cur ])^ ) * 1000;
-//  cur := cur + 2 ;
-
   totCars :=  Ord( buf3[incMove][ cur ]);
   Cur := Cur + 1;
   // cursore posizionato sul primo player
@@ -902,14 +869,27 @@ begin
 
     aCarColor := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
+    aBox := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
 
-//    nMatchesplayed := PWORD(@buf3[incMove][ cur ])^;
-//    Cur := Cur + 2 ;
+    aCellGuid := PWORD(@buf3[incMove][ cur ])^;
+    Cur := Cur + 2 ;
+    aTires := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aBrakes := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aGear := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aBody := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    anEngine := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aSuspension := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
 
     if FirstTime then begin
       aCar := TCar.Create;
       aCar.Guid := aGuid ;
-//      aCar.AI  := False;
       aCar.UserName := aUsername;
       aCar.CarColor := aCarColor;
       aCar.box := aCarColor;
@@ -919,35 +899,39 @@ begin
     end
     else begin
 
-//      aCar := Brain.GetCar ( Guid );
+      aCar := Brain.FindCar ( aGuid );
     end;
 
 //    aCar.lastGear
-//    aCar.tires := aTires
-//    aCar.Cell := FindCell ( guidcell);
+    aCar.Tires := aTires;
+    aCar.Brakes := aBrakes;
+    aCar.Gear := aGear;
+    aCar.Body := aBody;
+    aCar.Engine := anEngine;
+    aCar.Suspension := aSuspension;
+    aCell := GetCell ( aCellGuid );
 
 
     if FirstTime then begin
 
-//      aCar.Se_Sprite := se_Players.CreateSprite(UniformBitmapGK.Bitmap , aPlayer.Ids,1,1,1000,0,0,true);
-//      aCar.Se_Sprite.Scale:= ScaleSprites;
-//      aCar.Se_Sprite.ModPriority := i+2;
+      aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
+      aCar.SE_Sprite.Scale := 86;
+      aCar.SE_Sprite.Visible := False;
  //     aCar.Se_Sprite.MoverData.Speed := DEFAULT_SPEED_PLAYER;
 
     end;
 
 
-//      aPlayer.Se_Sprite.Position := aSEField.position  ;
-//      aPlayer.Se_Sprite.MoverData.Destination := aSEField.Position;
+    aCar.Se_Sprite.PositionX := aCell.PixelX;
+    aCar.Se_Sprite.PositionY := aCell.PixelY;
+//    aCar.Se_Sprite.Angle :=
+    aCar.Se_Sprite.MoverData.Destination := Point ( aCell.PixelX, aCell.PixelY );
 
-//      if GameScreen = ScreenSubs then
-//        aPlayer.Se_Sprite.Visible := True
-//        else aPlayer.Se_Sprite.Visible := false;
+    if (Brain.Stage = StageQualifications) or (Brain.Stage = StageRace) then
+      aCar.SE_Sprite.Visible := True;
+//      CarSpritesReset ( True );
 
-    end;
-
-
-//    aPlayer.SE_Sprite.Visible := True;
+  end;
 
 
 // NOTE HERE
@@ -956,17 +940,21 @@ begin
 
 
 
-  for I := 0 to Brain.lstCars.Count -1 do begin
-    aCar :=  Brain.lstCars[i];
-    aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
-    aCar.SE_Sprite.Scale := 86;
-    aCar.SE_Sprite.Visible := False;
+end;
+function TForm1.GetCell ( Guid : SmallInt ) : TCell;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := Brain.Circuit.Count -1 downto 0 do begin
+    if Brain.Circuit[i].Guid = Guid then begin
+      Result := Brain.Circuit[i];
+      Exit;
+    end;
   end;
 
-     // if Race then CarSpritesReset ( True );
-
-
 end;
+
 procedure TForm1.TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
 begin
 //
@@ -1167,8 +1155,8 @@ end;
 procedure TForm1.LoadCircuit ( CircuitName: string );
 var
   ini : TIniFile;
-  TotCells,tmpSmallInt: SmallInt;
-  i,L,a,count: Integer;
+  TotCells: SmallInt;
+  i,L,a: Integer;
   aCell: TCell;
   TotLinkForward, TotAdjacent, tmpb: Byte;
   aSprite: SE_Sprite;
@@ -1224,5 +1212,25 @@ begin
 
 end;
 
+function TForm1.GetbrainStream ( brain: TFormulaDBrain) : string;
+var
+  CompressedStream: TZCompressionStream;
+  SS: TStringStream;
+begin
+              // senza compressione
+  {SS := TStringStream.Create('');
+  SS.CopyFrom( brain.MMbraindata, 0);
+  NewData := SS.DataString;
+  SS.Free;   }
+
+  // con compressione
+  CompressedStream := TZCompressionStream.Create(brain.MMbraindataZIP, zcDefault); // create the compression stream
+  CompressedStream.Write( brain.MMbraindata.Memory , brain.MMbraindata.size); // move and compress the InBuffer string -> destination stream  (MyStream)
+  CompressedStream.Free;
+  SS := TStringStream.Create('');
+  SS.CopyFrom( brain.MMbraindataZIP, 0);
+  Result := SS.DataString;
+  SS.Free;
+end;
 
 end.
