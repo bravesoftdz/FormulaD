@@ -78,30 +78,32 @@ type
     btnCancelGame: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
-    procedure SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
+    procedure btnStartServerClick(Sender: TObject);
+    procedure btnStartGameClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure btnExitClick(Sender: TObject);
+    procedure btnCancelGameClick(Sender: TObject);
+
     procedure cbHumanPlayersCloseUp(Sender: TObject);
     procedure cbCPUCloseUp(Sender: TObject);
-    procedure btnStartGameClick(Sender: TObject);
-    procedure SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
     procedure cbLapsCloseUp(Sender: TObject);
-    procedure btnStartServerClick(Sender: TObject);
+
+    procedure SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+    procedure SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+    procedure SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+    procedure SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+
+
     procedure TcpserverClientConnect(Sender: TObject; Client: TWSocketClient; Error: Word);
     procedure TcpserverLineLimitExceeded(Sender: TObject; RcvdLength: Integer; var ClearData: Boolean);
     procedure TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
     procedure TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
     procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
-    procedure Button1Click(Sender: TObject);
+
     procedure tcpSessionConnected(Sender: TObject; ErrCode: Word);
-    procedure btnExitClick(Sender: TObject);
-    procedure btnCancelGameClick(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure tcpDataAvailable(Sender: TObject; ErrCode: Word);
+
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -113,6 +115,7 @@ type
     procedure ConnectClient;
 
     procedure LoadCircuit ( CircuitName: string );
+    procedure LoadBrain   ( incMove: Byte; FirstTime: boolean );
     procedure CarSpritesReset ( StartingGrid : Boolean );
   public
     { Public declarations }
@@ -120,6 +123,7 @@ type
   end;
 
   const EndofLine = 'ENDFD';
+  type TArray8192 = array [0..8191] of AnsiChar; // i buf[0..255] of  TArray8192 contengono il buffer Tcp in entrata
 
 var
   Form1: TForm1;
@@ -128,6 +132,12 @@ var
   RowPlayer: Integer; // per il cambio di colore
   Brain: TFormulaDBrain;
   mm : TMemoryStream;
+
+  FirstLoadOK: Boolean; // Primo caricamento della partita avvenuto. Avviene anche durante un reconnect
+  Buf3 : array [0..255] of TArray8192;    // array globali. vengono riempiti in Tcp.dataavailable. una partita non va oltre 255 turni, di solito 120 + recupero
+  MM3 : array [0..255] of TMemoryStream;  // copia di cui sopra ma in formato stream, per un accesso rapido a certe informazioni
+
+  LastTcpincMove,CurrentIncMove: byte;
 
 implementation
 uses Unit3;
@@ -205,11 +215,9 @@ begin
         aCar.CliId := TcpServer.Client[i].CliId;
         aCar.AI  := False;
         aCar.UserName := TcpServer.Client[i].UserName;
-        aCar.Car := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
-        aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.Car) + '.bmp', IntToStr(aCar.CliId),1,1,1000,0,0,true );
-        aCar.box := aCar.Car;
-        aCar.SE_Sprite.Scale := 86;
-        aCar.SE_Sprite.Visible := False;
+        aCar.CarColor := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
+        aCar.box := aCar.CarColor;
+
 
         brain.lsTCars.Add(aCar);
 
@@ -225,12 +233,8 @@ begin
         aCar.CliId := 0;
         aCar.AI := True;
         aCar.UserName := SE_GridSetupPlayers.Cells[0,r].Text;
-        aCar.Car := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
-        aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.Car) + '.bmp', aCar.UserName,1,1,1000,0,0,true );
-        aCar.box := aCar.Car;
-        aCar.SE_Sprite.Scale := 86;
-        aCar.SE_Sprite.Visible := False;
-
+        aCar.CarColor := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
+        aCar.box := aCar.CarColor;
 
         brain.lsTCars.Add(aCar);
 
@@ -243,10 +247,6 @@ begin
     if Brain.Qualifications = QualLap then begin
 
       Brain.Stage := StageSetupQ;
-      { TODO : savedata brain e invio al client. nessun comando }
-      for I := 0 to Tcpserver.ClientCount -1 do begin
-          TcpServer.Client[i].SendStr( 'setupq,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
-      end;
 
     end
     else if Brain.Qualifications = QualRnd then begin
@@ -254,16 +254,16 @@ begin
       Brain.CreateRndStartingGrid;
       Brain.Stage := StageSetupRace;
 
-      for I := 0 to Tcpserver.ClientCount -1 do begin
-          TcpServer.Client[i].SendStr( 'setupr,'  + EndOfLine );  // c'è il setup della car. Le penalità sono anche i points
-      end;
-
-      CarSpritesReset ( True ); // starting grid angle
 
       PanelCreateGame.Visible := False;
       SE_Theater1.Active := True;
       SE_Theater1.Visible := True;
     end;
+
+    for I := 0 to Tcpserver.ClientCount -1 do begin
+        TcpServer.Client[i].SendStr( 'BEGINBRAIN,'  +  EndOfLine );
+    end;
+
   end;
 end;
 procedure TForm1.CarSpritesReset ( StartingGrid : Boolean );
@@ -738,72 +738,7 @@ begin
     { string(buf) mi tronca la stringa zippata }
  //   SetLength( dataStr ,  Len - 19 );
     tmpStr := String(Buf);
-    if MidStr( tmpStr,1,4 )= 'GUID' then begin  // guid,guidteam,teamname,nextha,mi
-  //    dal server arriva una prima parte stringa e poi uno stream compresso:
-  //    Cli.SendStr( 'GUID,' + IntToStr(Cli.GuidTeam ) + ',' + Cli.teamName  + ',' + intToStr(Cli.nextHA) +',' + intToStr(Cli.mi) + ',' +
-  //    'BEGINBRAIN' +  chr ( abrain.incMove )   +  brainManager.GetBrainStream ( abrain ) + EndofLine);
-
-{      MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
-      viewMatch := false;
-      LiveMatch := true;
-      s1 := ExtractWordL (2, tmpStr, ',');
-      s2 := ExtractWordL (3, tmpStr, ',');
-      s3 := ExtractWordL (4, tmpStr, ',');
-      s4 := ExtractWordL (5, tmpStr, ',');
-      MyGuidTeam :=  StrToInt(s1);
-      MyGuidTeamName :=  s2;
-
-
-      TotalString := 4 + 5 + Length (s1) + Length (s2) +Length (s3) +Length (s4) ; //4 è la lunghezza di 'GUID' e 5 sono le virgole
-      LastTcpIncMove := ord (buf [TotalString + 10 ]); // 10 è lunghezza di BEGINBRAIN. mi posiziono sul primo byte che indica IncMove
-      MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
-
-      MM2:= TMemoryStream.Create;
-      MM2.Write( buf[  TotalString + 11 ] , len - 11 - TotalString ); // elimino s4 e incmove 11 -11. e prima elimino la parte stringa
-      DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
-
-
-      MM3[LastTcpIncMove].Clear;
-      MM3[LastTcpIncMove].CopyFrom ( DeCompressedStream, 0);
-      MM2.free;     // endsoccer si perde da solo decomprimendo
-      DeCompressedStream.Free;
-      CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
-      MM3[LastTcpIncMove].SaveToFile( dir_data + IntToStr(LastTcpIncMove) + '.IS');
-//      goto firstload;
-      if not FirstLoadOK  then begin   // avvio partita o ricollegamento
-       // AnimationScript.Reset;
-        InitializeTheaterMatch;
-        SE_interface.RemoveAllSprites;
-        GameScreen:= ScreenLiveMatch; // initializetheatermAtch
-        CurrentIncMove := LastTcpIncMove;
-        ClientLoadBrainMM (CurrentIncMove, true) ;   // (incmove)
-        FirstLoadOK := True;
-
-        if ViewReplay then ToolSpin.Visible := True;
-        for I := 0 to 255 do begin
-         incMoveAllProcessed [i] := false;
-         incMoveReadTcp [i] := false;
-        end;
-        for I := 0 to CurrentIncMove do begin
-         incMoveAllProcessed [i] := true; // caricato e completamente eseguito
-         incMoveReadTcp [i] := true;
-        end;
-
-
-        SpriteReset;
-        // se è la prima volta, ricevo una partita terminata
-        if (mybrain.finished) then begin //and   (Mybrain.Score.TeamGuid [0]  = MyGuidTeam ) or (Mybrain.Score.TeamGuid [1]  = MyGuidTeam ) then begin
-          ShowMatchInfo;
-        end
-        else
-          ThreadCurMove.Enabled := true; // eventuale splahscreen compare tramite tsscript e obbliga al pulsante exit. 30 seconplay se c'è il suo guidteam
-      end;
-
-      MM.Free;
-      Exit;    }
-    end
-    else if MidStr( tmpStr,1,10 )= 'BEGINBRAIN' then begin   // il byte incmove nella stringa
-
+    if MidStr( tmpStr,1,10 )= 'BEGINBRAIN' then begin   // il byte incmove nella stringa
 
 {        MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
 
@@ -820,7 +755,7 @@ begin
          MM3[LastTcpIncMove].Clear;
   //       DeCompressedStream.Position := 0;
          MM3[LastTcpIncMove].CopyFrom ( DeCompressedStream, 0);
-         MM2.free;     // endsoccer si perde da solo decomprimendo
+         MM2.free;     // endfd si perde da solo decomprimendo
          DeCompressedStream.Free;
   //      CopyMemory( @Buf3, mm3.Memory , mm3.size  ); // copia del buf per non essere sovrascritti
         CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
@@ -831,7 +766,7 @@ begin
             InitializeTheaterMatch;
             GameScreen:= ScreenLiveMatch; // initializetheatermAtch
             CurrentIncMove := LastTcpIncMove;
-            ClientLoadBrainMM (CurrentIncMove, true) ;   // (incmove)
+            LoadBrain (CurrentIncMove, true) ;   // (incmove)
             FirstLoadOK := True;
             for I := 0 to 255 do begin
              incMoveAllProcessed [i] := false;
@@ -852,32 +787,8 @@ begin
         end;
           MM.Free;
           Exit;             }
-    end
-    else if MidStr(tmpStr,1,9 )= 'BEGINTEAM' then begin
-
-{      ThreadCurMove.Enabled := false; // parte solo in beginbrain
-      MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
-
-      // elimino beginbrain
-      MM2:= TMemoryStream.Create;
-      MM2.Write( buf[9] , len - 9 ); // elimino beginteam
-
-      // su mm3 ho 9c78 compressed
-       DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
-       MM3[0].Clear;
-//       DeCompressedStream.Position := 0;
-       MM3[0].CopyFrom ( DeCompressedStream, 0);
-       MM2.free;     // endsoccer si perde da solo decomprimendo
-       DeCompressedStream.Free;
-      CopyMemory( @Buf3[0][0], mm3[0].Memory , mm3[0].size  ); // copia del buf per non essere sovrascritti
-      GameScreen := ScreenFormation;
-
-      ClientLoadFormation;
-      MM.Free;
-      Exit;       }
     end;
 
-//    ThreadCurMove.Enabled := false; // parte solo in beginbrain
 //    MemoC.Lines.Add( 'normal size: ' + IntToStr(Len) );
 
     Ts:= Tstringlist.Create ;
@@ -900,7 +811,162 @@ begin
 
 
 end;
+procedure TForm1.LoadBrain   ( incMove: Byte; FirstTime: boolean );
+var
+  SS : TStringStream;
+  lenCircuitName, lenUsername, aCarColor: byte;
+  lenMatchInfo: word;
+  dataStr,tmpStr: string;
+  Cur: Integer;
+  totCars,CarGuid, totPath: Byte;
+  aSEField, aSprite: se_Sprite;
+  i,ii , aAge,aCellX,aCellY,aBox,aGuid,nMatchesPlayed,nMatchesLeft,pcount,rndY,aStamina: integer;
+  DefaultCellX,DefaultCellY: ShortInt;
+  TalentID1,TalentID2: Byte;
+  aPoint : TPoint;
+  aName, aUserName,  Attributes,aIds: string;
+  bmp: se_Bitmap;
+  PenaltyCell: TPoint;
+  bmp1: SE_Bitmap;
+  Injured: Integer;
+  ACellBarrier,TvReserveCell: TPoint;
+  DefaultSpeed, DefaultDefense , DefaultPassing, DefaultBallControl, DefaultShot, DefaultHeading: Byte;
+  Speed, Defense , Passing, BallControl, Shot, Heading: ShortInt;
+  aCar : TCar;
+begin
 
+  if FirstTime then begin
+    se_EngineCars.RemoveAllSprites ;
+    se_EngineCars.ProcessSprites(2000);
+    Brain.lstCars.Clear;
+  end;
+
+  SS := TStringStream.Create;
+  SS.Size := MM3[incMove].Size;
+  MM3[incMove].Position := 0;
+  ss.CopyFrom( MM3[incMove], MM3[incMove].size );
+  //    dataStr := RemoveEndOfLine(string(buf));
+  dataStr := SS.DataString;
+  SS.Free;
+
+  if RightStr(dataStr,2) <> 'IS' then Exit;
+
+  // a 0 c'è la word che indica dove comincia tsScript
+  cur := 0;
+  lenCircuitName:=  Ord( buf3[incMove] [ cur ]);                 // ragiona in base 0
+  Brain.CircuitDescr.name := MidStr( dataStr, cur + 2  , lenCircuitName );// ragiona in base 1
+  cur  := cur + lenCircuitName + 1;
+
+  LoadCircuit ( Brain.CircuitDescr.name ) ; // load del client. Sovrascrive il Server. i debris sono a parte
+
+
+  Brain.Qualifications :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+  Brain.WeatherStart :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+  Brain.Weather :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+  Brain.Track :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+  Brain.Stage :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+  Brain.CurrentCar :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
+
+
+//  MyBrain.Score.TeamGuid [0] :=  PDWORD(@buf3[incMove][ cur ])^;
+//  cur := cur + 4 ;
+//  MyBrain.Score.TeamGuid [1] :=  PDWORD(@buf3[incMove][ cur ])^;
+
+
+//  MyBrain.Score.Country [0] :=  PWORD(@buf3[incMove][ cur ])^;
+//  cur := cur + 2 ;
+//  MyBrain.Score.Country [1] :=  PWORD(@buf3[incMove][ cur ])^;
+//  cur := cur + 2 ;
+
+
+//  LocalSeconds  :=  Ord( buf3[incMove][ cur ]);
+//  MyBrain.fmilliseconds :=  (PWORD(@buf3[incMove][ cur ])^ ) * 1000;
+//  cur := cur + 2 ;
+
+  totCars :=  Ord( buf3[incMove][ cur ]);
+  Cur := Cur + 1;
+  // cursore posizionato sul primo player
+  for I := 0 to totCars -1 do begin
+
+    aGuid := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1;
+    lenUsername :=  Ord( buf3[incMove][ cur ]);
+    aUsername := MidStr( dataStr, cur + 2  , lenUsername );// ragiona in base 1  e l'elemento 0 è la len della stringa quindi + 2
+    cur  := cur + lenUsername + 1;
+
+    aCarColor := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+
+//    nMatchesplayed := PWORD(@buf3[incMove][ cur ])^;
+//    Cur := Cur + 2 ;
+
+    if FirstTime then begin
+      aCar := TCar.Create;
+      aCar.Guid := aGuid ;
+//      aCar.AI  := False;
+      aCar.UserName := aUsername;
+      aCar.CarColor := aCarColor;
+      aCar.box := aCarColor;
+
+
+      brain.lstCars.Add(aCar);
+    end
+    else begin
+
+//      aCar := Brain.GetCar ( Guid );
+    end;
+
+//    aCar.lastGear
+//    aCar.tires := aTires
+//    aCar.Cell := FindCell ( guidcell);
+
+
+    if FirstTime then begin
+
+//      aCar.Se_Sprite := se_Players.CreateSprite(UniformBitmapGK.Bitmap , aPlayer.Ids,1,1,1000,0,0,true);
+//      aCar.Se_Sprite.Scale:= ScaleSprites;
+//      aCar.Se_Sprite.ModPriority := i+2;
+ //     aCar.Se_Sprite.MoverData.Speed := DEFAULT_SPEED_PLAYER;
+
+    end;
+
+
+//      aPlayer.Se_Sprite.Position := aSEField.position  ;
+//      aPlayer.Se_Sprite.MoverData.Destination := aSEField.Position;
+
+//      if GameScreen = ScreenSubs then
+//        aPlayer.Se_Sprite.Visible := True
+//        else aPlayer.Se_Sprite.Visible := false;
+
+    end;
+
+
+//    aPlayer.SE_Sprite.Visible := True;
+
+
+// NOTE HERE
+
+
+
+
+
+  for I := 0 to Brain.lstCars.Count -1 do begin
+    aCar :=  Brain.lstCars[i];
+    aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
+    aCar.SE_Sprite.Scale := 86;
+    aCar.SE_Sprite.Visible := False;
+  end;
+
+     // if Race then CarSpritesReset ( True );
+
+
+end;
 procedure TForm1.TcpserverBgException(Sender: TObject; E: Exception; var CanClose: Boolean);
 begin
 //
@@ -1111,7 +1177,7 @@ begin
 
   ini := TIniFile.Create( dir_circuits + CircuitName + '.ini' );
   brain.CircuitDescr.Name := ini.ReadString('setup','Name','');
-  brain.CircuitDescr.Corners := ini.ReadInteger('setup','Corners',0);
+  brain.CircuitDescr.Corners := ini.ReadString('setup','Corners','');
   ini.Free;
 
   mm.LoadFromFile(  dir_circuits + CircuitName + '.fd' );

@@ -24,8 +24,8 @@ const TrackDry = 0;
 const TrackWet = 1;
 
 type TCircuitDescr = record
-  Name : string;
-  Corners: Byte;
+  Name : string[25];
+  Corners: string[255];
   CarAngle: SmallInt;
 end;
 type TCell = Class
@@ -49,7 +49,7 @@ type TCar = Class
   Guid : Byte;
   CliId : Integer;
   UserName: string[25];
-  Car: Integer;            // il box sulla mappa sul quale mi devo fermare
+  CarColor: Byte;    // il colore e il box sulla mappa sul quale mi devo fermare
   AI: Boolean;
 
   Cell :TCell;
@@ -81,12 +81,12 @@ type TFormulaDBrain = class
     WeatherStart: Byte;
     Weather : Byte;
     Track : Byte; // 0 dry 1 wet
+    Stage: Byte;
+    CurrentCar: Byte;
 
     lstCars: TObjectList<TCar>;
     Circuit : TObjectList<TCell>;
     CircuitDescr: TCircuitDescr;
-    Stage: Byte;
-    CurrentCar: Byte;
   constructor Create;
   destructor Destroy;override;
   procedure CreateRndStartingGrid;
@@ -227,15 +227,19 @@ begin
   // 2 bytes che indicano l'offset dell'inizio di tsScript
   // variabili globali
   // lstcar.count
-  // l'animazione è il path della Car
+  // lista car
+  // (l'animazione è il path della Car)
+  // Info --> crash, consumo freni, gomme, eliminazione, cambio clima ecc....
   ISMARK [0] := 'I';
   ISMARK [1] := 'S';
   MMbraindata.Clear;
   MMbraindataZIP.size := 0;
 
+  MMbraindata.Write( @CircuitDescr.Name [0], length ( CircuitDescr.Name) +1 );      // +1 byte 0 indica lunghezza stringa
   MMbraindata.Write( @Qualifications, SizeOf(Byte) );
   MMbraindata.Write( @WeatherStart, SizeOf(Byte) );
   MMbraindata.Write( @Weather, SizeOf(Byte) );
+  MMbraindata.Write( @Track, SizeOf(Byte) );
   MMbraindata.Write( @Stage, SizeOf(Byte) );
   MMbraindata.Write( @CurrentCar, SizeOf(Byte) );
 
@@ -246,7 +250,9 @@ begin
   for i := 0 to lstCars.Count -1 do begin
     MMbraindata.Write( @lstCars[i].Guid, sizeof(Byte) );
     MMbraindata.Write( @lstCars[i].Username [0], length ( lstCars[i].Username) +1 );      // +1 byte 0 indica lunghezza stringa
-{  Car: Integer;            // il box sulla mappa sul quale mi devo fermare
+    MMbraindata.Write( @lstCars[i].CarColor, sizeof(Byte) );  // il box sulla mappa sul quale mi devo fermare
+
+    {
   AI: Boolean;
 
   Cell :TCell;
