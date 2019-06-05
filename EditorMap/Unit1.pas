@@ -1,7 +1,7 @@
 unit Unit1;
 
 interface
-     { TODO : fare blocchi di pista decrementali_ modedistance }
+
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.Generics.Defaults, System.Generics.Collections,

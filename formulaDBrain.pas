@@ -86,6 +86,7 @@ type TFormulaDBrain = class
     RandGen: TtdBasePRNG;
     ServerIncMove : Integer;
 
+    CarSetupPoints: Byte;
     Qualifications: Byte;
     WeatherStart: Byte;
     Weather : Byte;

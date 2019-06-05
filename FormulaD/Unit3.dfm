@@ -219,9 +219,9 @@ object Form3: TForm3
     Margin = 4
   end
   object lblWeather: TLabel
-    Left = 172
+    Left = 156
     Top = 13
-    Width = 50
+    Width = 58
     Height = 16
     AutoSize = False
     Caption = 'Weather:'
@@ -249,7 +249,7 @@ object Form3: TForm3
   object lblPoints: TLabel
     Left = 240
     Top = 78
-    Width = 50
+    Width = 63
     Height = 16
     AutoSize = False
     Caption = 'Points:'
@@ -358,6 +358,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 2
+    OnGridCellMouseDown = SE_GridTiresGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -539,5 +540,14 @@ object Form3: TForm3
     Font.Height = -11
     Font.Name = 'Tahoma'
     Font.Style = []
+  end
+  object Button1: TButton
+    Left = 184
+    Top = 328
+    Width = 75
+    Height = 25
+    Caption = 'confirm'
+    TabOrder = 8
+    OnClick = Button1Click
   end
 end

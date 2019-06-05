@@ -71,8 +71,6 @@ type
     lblServerPwd: TLabel;
     lblServerPort: TLabel;
     SE_EngineCars: SE_Engine;
-    PanelCarSetup: SE_Panel;
-    SE_GridCarSetup: SE_Grid;
     SE_Theater1: SE_Theater;
     SE_EngineBack: SE_Engine;
     btnCancelGame: TCnSpeedButton;
@@ -123,6 +121,7 @@ type
   public
     { Public declarations }
     procedure ResetSetupWeather  ( aGridWeather: Se_grid);
+    procedure InitializeCar ( aCar : Tcar );
   end;
 
   const EndofLine = 'ENDFD';
@@ -140,7 +139,8 @@ var
   Buf3 : array [0..255] of TArray8192;    // array globali. vengono riempiti in Tcp.dataavailable. una partita non va oltre 255 turni, di solito 120 + recupero
   MM3 : array [0..255] of TMemoryStream;  // copia di cui sopra ma in formato stream, per un accesso rapido a certe informazioni
 
-  LastTcpincMove,CurrentIncMove: byte;
+  MyCarAccount,LastTcpincMove,CurrentIncMove: byte;
+  BmpTiresDry, BmpTiresWet : SE_Bitmap;
 
 implementation
 uses Unit3;
@@ -208,17 +208,22 @@ var
   i,r: Integer;
 begin
 // quando tutti sono connessi
+  LoadCircuit ( cbCircuit.text ) ; // le car sono già caricate anche come sprite
 
   for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
     for I := 0 to Tcpserver.ClientCount -1 do begin
       if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,R].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
         aCar := TCar.Create;
         aCar.Guid := i ;
+        TcpServer.Client[i].Account := aCar.Guid; // -->
         aCar.CliId := TcpServer.Client[i].CliId;
         aCar.AI  := False;
         aCar.UserName := TcpServer.Client[i].UserName;
         aCar.CarColor := StrToInt( SE_GridSetupPlayers.Cells[0,R].ids );
         aCar.box := aCar.CarColor;
+        aCar.cell := Brain.Circuit[0]; // lo metto in una cella qualunque invisibile
+
+        InitializeCar ( aCar );
 
 
         brain.lsTCars.Add(aCar);
@@ -237,6 +242,9 @@ begin
         aCar.UserName := SE_GridSetupPlayers.Cells[1,r].Text;
         aCar.CarColor := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
         aCar.box := aCar.CarColor;
+        aCar.cell := Brain.Circuit[0]; // lo metto in una cella qualunque invisibile
+
+        InitializeCar ( aCar );
 
         brain.lsTCars.Add(aCar);
 
@@ -244,7 +252,7 @@ begin
 
   if Brain.lsTCars.Count = StrToInt( cbHumanPlayers.Text ) + StrToInt( cbCPU.Text ) then begin   // tutti connessi
 
-    LoadCircuit (cbCircuit.text ) ; // le car sono già caricate anche come sprite
+   // LoadCircuit ( cbCircuit.text ) ; // le car sono già caricate anche come sprite
 
     if Brain.Qualifications = QualLap then begin
       Brain.ServerIncMove := 0;
@@ -262,12 +270,59 @@ begin
       SE_Theater1.Visible := True;
     end;
 
+    Brain.CarSetupPoints :=  StrToInt(LeftStr( cbCarSetup.Text,2)); // setup car Points
+
     Brain.SaveData ( Brain.ServerIncMove ) ;
     for I := 0 to Tcpserver.ClientCount -1 do begin
-        TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  ) +  GetbrainStream ( brain ) + EndOfLine );
+        { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
+        TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  )
+                                                   + AnsiChar (  tcpserver.Client[i].Account )
+                                                   + GetbrainStream ( brain ) +  EndOfLine );
     end;
 
   end;
+end;
+procedure TForm1.InitializeCar ( aCar : Tcar );
+begin
+
+  aCar.Tires := 1;
+  aCar.Brakes := 1;
+  aCar.Gear:= 1;
+  aCar.Body := 1;
+  aCar.Engine := 1;
+  aCar.Suspension := 1;
+
+  if Brain.CarSetupPoints = 15 then begin
+
+    aCar.TiresMax := 9;
+    aCar.BrakesMax := 9;
+    aCar.GearMax:= 9;
+    aCar.BodyMax := 9;
+    aCar.EngineMax := 9;
+    aCar.SuspensionMax := 9;
+
+  end
+  else if Brain.CarSetupPoints = 18 then begin
+
+    aCar.TiresMax := 12;
+    aCar.BrakesMax := 12;
+    aCar.GearMax:= 12;
+    aCar.BodyMax := 12;
+    aCar.EngineMax := 12;
+    aCar.SuspensionMax := 12;
+
+  end
+  else if Brain.CarSetupPoints = 20 then begin
+
+    aCar.TiresMax := 14;
+    aCar.BrakesMax := 7;
+    aCar.GearMax:= 7;
+    aCar.BodyMax := 7;
+    aCar.EngineMax := 7;
+    aCar.SuspensionMax := 7;
+
+  end
+
 end;
 procedure TForm1.CarSpritesReset ( StartingGrid : Boolean );
 var
@@ -380,12 +435,15 @@ procedure TForm1.cbLapsCloseUp(Sender: TObject);
 begin
   cbCarSetup.Clear;
 
-  if (cbLaps.Text = '1') or (cbLaps.Text ='2') then begin
-    cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
-    cbCarSetup.Items.Add( 'Setup Free 18 Points');  // x1 x2  lap
+  if (cbLaps.Text = '1')  then begin
+    cbCarSetup.Items.Add( '15 Free Points');  // x1 lap
+  end;
+  if (cbLaps.Text ='2') then begin
+//    cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
+    cbCarSetup.Items.Add( '18 Free Points');  // x1 x2  lap
   end
   else if cbLaps.Text = '3' then begin
-    cbCarSetup.Items.Add( 'Setup 20 Points limit 14/7');
+    cbCarSetup.Items.Add( '20 Points limit 14/7');
   end;
   cbCarSetup.ItemIndex := 0;
 
@@ -534,8 +592,7 @@ begin
 
   ResetCarColor;
 
-  cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
-  cbCarSetup.Items.Add( 'Setup Free 18 Points');  // x1 x2  lap
+  cbCarSetup.Items.Add( '15 Free Points');  // x1 lap
   cbCarSetup.ItemIndex := 0;
 
   Brain := TFormulaDBrain.Create;
@@ -766,11 +823,12 @@ begin
 //        MemoC.Lines.Add( 'Compressed size: ' + IntToStr(Len) );
 
         LastTcpIncMove := ord (buf [10]);
+        MyCarAccount := ord (buf [11]);
 //        MemoC.Lines.Add('BEGINBRAIN '+  IntToStr(LastTcpIncMove) );
 
         // elimino beginbrain
         MM2:= TMemoryStream.Create;
-        MM2.Write( buf[11] , len - 11 ); // elimino beginbrain   e incmove 11 -11
+        MM2.Write( buf[12] , len - 12 ); // elimino beginbrain   e incmove 11 -11  e MycarAccount
 
         // su mm3 ho 9c78 compressed
          DeCompressedStream:= TZDeCompressionStream.Create( MM2  );
@@ -858,15 +916,6 @@ begin
   Brain.Stage :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
 
-  if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then begin
-    if Brain.Track = TrackDry then
-      Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
-      else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
-    Form3.Show;
-    Form3.setupQ;
-    Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
-    Exit;
-  end;
 
   Brain.CurrentCar :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
@@ -962,6 +1011,13 @@ begin
     aCar.Body := aBody;
     aCar.Engine := anEngine;
     aCar.Suspension := aSuspension;
+    aCar.TiresMax := aTiresMax;
+    aCar.BrakesMax := aBrakesMax;
+    aCar.GearMax := aGearMax;
+    aCar.BodyMax := aBodyMax;
+    aCar.EngineMax := anEngineMax;
+    aCar.SuspensionMax := aSuspensionMax;
+
     aCell := GetCell ( aCellGuid );
     aCar.Cell  := aCell;
 
@@ -987,6 +1043,15 @@ begin
 
   end;
 
+  if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then begin
+    if Brain.Track = TrackDry then
+      Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
+      else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
+    Form3.Show;
+    Form3.setupQ;
+    Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
+  //  Exit;
+  end;
 
 // NOTE HERE
 
@@ -1041,6 +1106,7 @@ begin
     for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
       if SE_GridSetupPlayers.Cells[1,i].Guid = Client.CliId then begin
         Client.UserName := '';
+        Client.Account := -1;
         SE_GridSetupPlayers.Cells[1,i].Guid := 0;
         SE_GridSetupPlayers.Cells[1,i].FontColor := clYellow;
         SE_GridSetupPlayers.Cells[1,i].Text := 'Waiting for connection';
@@ -1109,6 +1175,7 @@ begin
     for I := 0 to StrToInt (cbHumanPlayers.text)  -1 do begin
       if SE_GridSetupPlayers.Cells[1,i].Guid = 0 then begin
         Cli.UserName := ts[1];
+        Cli.Account := I;
         SE_GridSetupPlayers.Cells[1,i].Guid := Cli.CliId;
         SE_GridSetupPlayers.Cells[1,i].Text := Cli.UserName;
         SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;

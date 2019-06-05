@@ -601,54 +601,6 @@ object Form1: TForm1
       OnClick = Button1Click
     end
   end
-  object PanelCarSetup: SE_Panel
-    Left = 37
-    Top = 452
-    Width = 241
-    Height = 125
-    BevelOuter = bvNone
-    Color = 8081721
-    ParentBackground = False
-    TabOrder = 3
-    Visible = False
-    object SE_GridCarSetup: SE_Grid
-      Left = 23
-      Top = 8
-      Width = 82
-      Height = 101
-      Cursor = crHandPoint
-      MouseScrollRate = 1.000000000000000000
-      MouseWheelInvert = False
-      MouseWheelValue = 10
-      MouseWheelZoom = False
-      MousePan = False
-      MouseScroll = False
-      BackColor = 8081721
-      AnimationInterval = 20
-      GridInfoCell = False
-      GridVisible = False
-      GridColor = clSilver
-      GridCellWidth = 40
-      GridCellHeight = 30
-      GridCellsX = 10
-      GridCellsY = 4
-      GridHexSmallWidth = 10
-      CollisionDelay = 0
-      ShowPerformance = False
-      VirtualWidth = 212
-      Virtualheight = 212
-      Passive = True
-      Visible = False
-      TabOrder = 0
-      OnGridCellMouseDown = SE_GridCarColorGridCellMouseDown
-      CellBorder = CellBorderNone
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = []
-    end
-  end
   object SE_Theater1: SE_Theater
     Left = 336
     Top = 740
@@ -674,7 +626,7 @@ object Form1: TForm1
     ShowPerformance = False
     VirtualWidth = 212
     Virtualheight = 212
-    TabOrder = 4
+    TabOrder = 3
   end
   object SE_SearchFiles1: SE_SearchFiles
     SubDirectories = True
