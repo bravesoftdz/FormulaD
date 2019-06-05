@@ -9,7 +9,7 @@ uses
   DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, System.IniFiles, Vcl.Grids;
 
 type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z},
-                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F},modeDistance{D} ) ;
+                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F},modeDistance{D}, modeAngle{N} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
@@ -41,6 +41,10 @@ type
     Button3: TButton;
     Button4: TButton;
     Button5: TButton;
+    Panel6: TPanel;
+    Label6: TLabel;
+    CnSpinEdit7: TCnSpinEdit;
+    SE_EngineCars: SE_Engine;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton;Shift: TShiftState);
@@ -54,6 +58,8 @@ type
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
+    procedure SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState;
+      var Handled: Boolean);
   private
     { Private declarations }
     fmode : TMode;
@@ -75,6 +81,7 @@ type
     procedure RemoveAdjacent ( MainSprite,aSprite : SE_Sprite );
     procedure ResetSpriteCells;
     procedure ShowCorners;
+    procedure ShowAngle;
     procedure ShowStartingGrid;
     procedure ShowBox;
     procedure ShowfinishLine;
@@ -93,6 +100,7 @@ var
   ClickedCell: Boolean;
   mm : TMemoryStream;
   dir_Cars, dir_circuits : string;
+  carSprite: SE_Sprite;
 implementation
 
 {$R *.dfm}
@@ -111,6 +119,7 @@ begin
     mm.Write( @Circuit[i].Guid , SizeOf(SmallInt));
     mm.Write( @Circuit[i].Lane , SizeOf(ShortInt));
     mm.Write( @Circuit[i].Corner , SizeOf(Byte));
+    mm.Write( @Circuit[i].Angle , SizeOf(SmallInt));
     mm.Write( @Circuit[i].StartingGrid , SizeOf(Byte));
     mm.Write( @Circuit[i].Box , SizeOf(Byte));
     mm.Write( @Circuit[i].FinishLine , SizeOf(Boolean));
@@ -149,14 +158,13 @@ var
   aSprite: SE_Sprite;
 begin
   Circuit.clear;
-  aBmp:= Se_bitmap.Create (20,20);
+  aBmp:= Se_bitmap.Create (22,16);
   aBmp.Bitmap.Canvas.Brush.color := clGray;
-  aBmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+  aBmp.Bitmap.Canvas.Ellipse(2,2,22,16);
 
-  ini := TIniFile.Create( dir_circuits + CircuitName + '.ini' );
-  CircuitDescr.Corners := ini.ReadInteger('setup','Corners',0);
-  CircuitDescr.CarAngle := ini.ReadInteger('setup','CarAngle',0);
-  ini.Free;
+//  ini := TIniFile.Create( dir_circuits + CircuitName + '.ini' );
+//  CircuitDescr.Corners := ini.ReadString('setup','Corners','');
+//  ini.Free;
 
   mm.LoadFromFile(  dir_circuits + CircuitName + '.fd' );
   mm.Position := 0;
@@ -166,6 +174,7 @@ begin
     mm.Read( aCell.Guid , SizeOf(SmallInt) );
     mm.Read( aCell.Lane , SizeOf(ShortInt) );
     mm.Read( aCell.Corner , SizeOf(Byte) );
+    mm.Read( aCell.Angle , SizeOf(SmallInt) );
     mm.Read( aCell.StartingGrid , SizeOf(Byte) );
     mm.Read( aCell.Box , SizeOf(Byte) );
     mm.Read( aCell.FinishLine , SizeOf(Boolean) );
@@ -292,6 +301,8 @@ begin
                   Panel3.Visible := false;
                   Panel4.Visible := false;
                   Panel5.Visible := false;
+                  Panel6.Visible := false;
+                  carSprite.Visible := false;
 
   fmode := aMode;
   case aMode of
@@ -339,6 +350,13 @@ begin
                   aColor := clAqua;
                   aText := 'Set Corner/Straight';
                  end;
+    modeAngle:   begin
+                  Panel6.Visible := true;
+                  ShowAngle;
+                  aColor := cllime;
+                  aText := 'Set Car Angle';
+                  carSprite.Visible := True;
+                 end;
     modeStartingGrid:  begin
                   Panel3.Visible := True;
                   ShowStartingGrid;
@@ -379,6 +397,9 @@ begin
   SE_Theater1.Active := True;
   mm := TMemoryStream.Create;
 
+  carSprite:=  SE_EngineCars.CreateSprite( dir_Cars + '1.bmp', 'car',1,1,1000,0,0,true);
+  carSprite.Visible := False;
+
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -408,6 +429,9 @@ begin
   end
   else if UpperCase(Key) = 'K' then begin
     Mode := modeCorner;
+  end
+  else if UpperCase(Key) = 'N' then begin
+    Mode := modeAngle;
   end
   else if UpperCase(Key) = 'G' then begin
     Mode := modeStartingGrid;
@@ -498,6 +522,20 @@ begin
     ShowCorners;
 
   end
+  else if mode = modeAngle then begin
+    ClickedCell := True;
+    aCell := GetCell( StrToInt(lstsprite[0].guid) );
+    case Button of
+      mbLeft: begin
+        aCell.Angle := CnSpinEdit7.Value;
+      end;
+      mbRight: begin
+        aCell.Angle := 0;
+      end;
+    end;
+    ShowAngle;
+
+  end
   else if mode = modeStartingGrid then begin
     ClickedCell := True;
     aCell := GetCell( StrToInt(lstsprite[0].guid) );
@@ -561,6 +599,20 @@ begin
 
 end;
 
+procedure TForm1.SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState; var Handled: Boolean);
+var
+  aCell: TCell;
+begin
+  Handled:= True;
+  if lstSprite[0].Engine = se_engine2 then begin
+    if mode = modeAngle then begin
+      aCell := GetCell ( StrToInt (lstSprite[0].Guid) );                   // dallo sprite alla cella
+      carSprite.Position := lstSprite[0].Position;
+      carSprite.Angle := aCell.Angle;
+    end;
+  end;
+end;
+
 procedure TForm1.SE_Theater1TheaterMouseDown(Sender: TObject; VisibleX, VisibleY, VirtualX, VirtualY: Integer; Button: TMouseButton; Shift: TShiftState);
 var
   aCell : TCell;
@@ -589,9 +641,9 @@ begin
       Circuit.Add(aCell);
 
 
-      aBmp:= Se_bitmap.Create (20,20);
+      aBmp:= Se_bitmap.Create (20,16);
       aBmp.Bitmap.Canvas.Brush.color := clGray;
-      aBmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aBmp.Bitmap.Canvas.Ellipse(2,2,22,16);
 
       aSprite := SE_Sprite.Create (aBmp.bitmap, IntToStr(incGuid) ,1,1,1000,0,0,true );
       incGuid := GetNextGuid;
@@ -693,17 +745,17 @@ begin
 
   for I := 0 to SE_Engine2.SpriteCount -1 do begin
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Brush.color := clGray;
-    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 
   if SelectedCell <> nil then begin
     SelectedCell.Bmp.Bitmap.Canvas.Brush.color := clGray;
-    SelectedCell.Bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    SelectedCell.Bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 
   SelectedCell := aSprite;
   aSprite.Bmp.Bitmap.Canvas.Brush.color := clRed;
-  aSprite.Bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+  aSprite.Bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
 
   if mode = modeAdjacent then begin
     ShowAdjacent ( aSprite );
@@ -729,7 +781,7 @@ begin
     aCellLinked :=  GetCell( aCell.LinkForward.Items[i]);         // dalla cella alla linkedCell
     LinkedSprite := SE_Engine2.FindSprite( IntTostr (aCellLinked.guid) );    // dalla linkedCell allo sprite della linked
     LinkedSprite.bmp.Bitmap.Canvas.Brush.color := clGreen;
-    LinkedSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    LinkedSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 end;
 procedure TForm1.StringGrid2SelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
@@ -779,7 +831,7 @@ begin
     aCellAdjacent :=  GetCell( aCell.Adjacent.Items[i]);         // dalla cella alla AdjacentCell
     AdjacentSprite := SE_Engine2.FindSprite( IntTostr(aCellAdjacent.guid ));    // dalla linkedCell allo sprite della AdjacentCell
     AdjacentSprite.bmp.Bitmap.Canvas.Brush.color := $32B4FE;
-    AdjacentSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    AdjacentSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 end;
 procedure TForm1.AddLinkForward ( MainSprite, aSprite : SE_Sprite );
@@ -789,7 +841,7 @@ begin
   aCell := GetCell ( StrToInt (MainSprite.Guid) );                   // dallo sprite alla cella
   aCell.LinkForward.Add( StrToInt (aSprite.Guid) );
   aSprite.bmp.Bitmap.Canvas.Brush.color := clGreen;
-  aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+  aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
 
 end;
 procedure TForm1.AddAdjacent ( MainSprite, aSprite : SE_Sprite );
@@ -799,7 +851,7 @@ begin
   aCell := GetCell ( StrToInt (MainSprite.Guid) );                   // dallo sprite alla cella
   aCell.Adjacent.Add( StrToInt (aSprite.Guid) );
   aSprite.bmp.Bitmap.Canvas.Brush.color := $32B4FE;
-  aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+  aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
 
 end;
 procedure TForm1.RemoveLinkForward ( MainSprite, aSprite : SE_Sprite );
@@ -813,7 +865,7 @@ begin
     if aCell.LinkForward.Items[L] = StrToInt(aSprite.Guid) then begin
       aCell.LinkForward.Delete(L);
       aSprite.bmp.Bitmap.Canvas.Brush.color := clGray; // torna normale.
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
     end;
   end;
 
@@ -831,7 +883,7 @@ begin
     if aCell.Adjacent.Items[L] = StrToInt(aSprite.Guid) then begin
       aCell.Adjacent.Delete(L);
       aSprite.bmp.Bitmap.Canvas.Brush.color := clGray; // torna normale.
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
     end;
   end;
 
@@ -845,12 +897,12 @@ begin
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Brush.color := clWhite;
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.FillRect( Rect(0,0,SE_Engine2.Sprites[i].bmp.Width,SE_Engine2.Sprites[i].bmp.Height) );
     SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Brush.color := clGray; // torna normale.
-    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    SE_Engine2.Sprites[i].bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 
   if (SelectedCell <> nil) then begin
     SelectedCell.Bmp.Bitmap.Canvas.Brush.color := clRed;
-    SelectedCell.Bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+    SelectedCell.Bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
   end;
 
 end;
@@ -864,7 +916,7 @@ begin
     if Circuit[i].Corner <> 0 then begin
       aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clAqua;
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clNavy;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
@@ -873,6 +925,28 @@ begin
 
       aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].Corner ));
     end;
+  end;
+
+end;
+procedure TForm1.ShowAngle;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clLime;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clNavy;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
+      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].Angle ));
+
   end;
 
 end;
@@ -888,7 +962,7 @@ begin
     if aCell.StartingGrid <> 0 then begin
       aSprite := SE_Engine2.FindSprite( IntToStr(aCell.Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clBlack;
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clWhite;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
@@ -910,7 +984,7 @@ begin
     if Circuit[i].Box <> 0 then begin
       aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clWhite-1;
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clBlack;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
@@ -932,7 +1006,7 @@ begin
     if Circuit[i].FinishLine  then begin
       aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clWhite-1;
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clBlack;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
@@ -953,7 +1027,7 @@ begin
   for i := Circuit.Count -1 downto 0 do begin
       aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
       aSprite.bmp.Bitmap.Canvas.Brush.color := clBlack;
-      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,16,16);
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
       aSprite.bmp.Bitmap.Canvas.Font.color := clWhite-1;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 6;

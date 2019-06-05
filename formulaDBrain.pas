@@ -37,7 +37,7 @@ type TCell = Class
   Corner : Byte;
   StartingGrid : Byte;
   Box : Byte;
-  { TODO : angle N }
+  Angle: SmallInt;
   FinishLine : Boolean;
   PixelX,PixelY : SmallInt;
   DistCorner : Byte;
@@ -63,6 +63,14 @@ type TCar = Class
   Body: ShortInt;
   Engine: ShortInt;
   Suspension: ShortInt;
+
+  TiresMax : ShortInt;
+  BrakesMax: ShortInt;
+  GearMax: ShortInt;
+  BodyMax: ShortInt;
+  EngineMax: ShortInt;
+  SuspensionMax: ShortInt;
+
 
   LastGear: ShortInt;
   constructor Create;
@@ -259,6 +267,12 @@ begin
     MMbraindata.Write( @lstCars[i].Body, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Engine, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Suspension, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].TiresMax, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].BrakesMax, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].GearMax, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].BodyMax, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].EngineMax, sizeof(ShortInt) );
+    MMbraindata.Write( @lstCars[i].SuspensionMax, sizeof(ShortInt) );
 
     totPath := lstCars[i].Path.Count;
     MMbraindata.Write( @totPath, sizeof(Byte) );

@@ -19,7 +19,7 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object SE_Theater1: SE_Theater
-    Left = 8
+    Left = 16
     Top = 8
     Width = 1200
     Height = 857
@@ -41,6 +41,7 @@ object Form1: TForm1
     GridHexSmallWidth = 10
     CollisionDelay = 0
     ShowPerformance = False
+    OnSpriteMouseMove = SE_Theater1SpriteMouseMove
     OnSpriteMouseDown = SE_Theater1SpriteMouseDown
     OnTheaterMouseMove = SE_Theater1TheaterMouseMove
     OnTheaterMouseDown = SE_Theater1TheaterMouseDown
@@ -311,6 +312,37 @@ object Form1: TForm1
     Visible = False
     OnClick = Button5Click
   end
+  object Panel6: TPanel
+    Left = 1214
+    Top = 287
+    Width = 202
+    Height = 58
+    TabOrder = 13
+    Visible = False
+    object Label6: TLabel
+      Left = 16
+      Top = 17
+      Width = 47
+      Height = 13
+      Caption = 'Car Angle'
+    end
+    object CnSpinEdit7: TCnSpinEdit
+      Left = 74
+      Top = 12
+      Width = 57
+      Height = 29
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      MaxValue = 360
+      MinValue = -360
+      ParentFont = False
+      TabOrder = 0
+      Value = 0
+    end
+  end
   object SE_Engine1: SE_Engine
     ClickSprites = False
     PixelCollision = False
@@ -324,7 +356,7 @@ object Form1: TForm1
     PixelClick = True
     PixelCollision = False
     IsoPriority = False
-    Priority = 1
+    Priority = 2
     Theater = SE_Theater1
     Left = 1279
     Top = 760
@@ -333,5 +365,14 @@ object Form1: TForm1
     SubDirectories = True
     Left = 1383
     Top = 760
+  end
+  object SE_EngineCars: SE_Engine
+    ClickSprites = False
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 1
+    Theater = SE_Theater1
+    Left = 1287
+    Top = 720
   end
 end

@@ -803,6 +803,7 @@ var
   aCellGuid : SmallInt;
   i,p: integer;
   aGuid,aBox,aTires,aBrakes,aGear,aBody,anEngine,aSuspension,aPathCount: Byte;
+  aTiresMax,aBrakesMax,aGearMax,aBodyMax,anEngineMax,aSuspensionMax: Byte;
   aCell: TCell;
   PathX,PathY:integer;
   aPoint : TPoint;
@@ -875,6 +876,7 @@ begin
 
     aCellGuid := PWORD(@buf3[incMove][ cur ])^;
     Cur := Cur + 2 ;
+
     aTires := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
     aBrakes := Ord( buf3[incMove][ cur ]);
@@ -886,6 +888,18 @@ begin
     anEngine := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
     aSuspension := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aTiresMax := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aBrakesMax := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aGearMax := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aBodyMax := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    anEngineMax := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+    aSuspensionMax := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
 
     aPathCount := Ord( buf3[incMove][ cur ]);
@@ -1190,6 +1204,7 @@ begin
     mm.Read( aCell.Guid , SizeOf(SmallInt) );
     mm.Read( aCell.Lane , SizeOf(ShortInt) );
     mm.Read( aCell.Corner , SizeOf(Byte) );
+    mm.Read( aCell.Angle , SizeOf(SmallInt) );
     mm.Read( aCell.StartingGrid , SizeOf(Byte) );
     mm.Read( aCell.Box , SizeOf(Byte) );
     mm.Read( aCell.FinishLine , SizeOf(Boolean) );
