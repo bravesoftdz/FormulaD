@@ -108,7 +108,7 @@ type
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
-    procedure SelectSetupWeather ( Col : Integer );
+    procedure SelectSetupWeather (aGridWeather: Se_grid; Col : Integer );
     procedure ResetSetupQual;
     procedure SelectSetupQual ( Col : Integer );
     procedure ResetCarColor;
@@ -190,11 +190,9 @@ end;
 
 procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
-  Form3.Show;
-  Form1.ResetSetupWeather ( Form3.SE_GridWeather );
   PanelCreateGame.Visible := True;
   PanelMain.Visible := False;
-  SelectSetupWeather (4);
+  SelectSetupWeather ( SE_GridWeather, 4);
   SelectSetupQual (1);
   RefreshPlayerCPU;
 end;
@@ -210,6 +208,7 @@ var
   i,r: Integer;
 begin
 // quando tutti sono connessi
+
   for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
     for I := 0 to Tcpserver.ClientCount -1 do begin
       if TcpServer.Client[i].UserName =  SE_GridSetupPlayers.Cells[1,R].text then begin  // corrispondenza gridplayer e tcpClient, altrimenti Spectator
@@ -560,17 +559,23 @@ begin
   aGridWeather.ClearData;   // importante anche pr memoryleak
   aGridWeather.DefaultColWidth := 51;
   aGridWeather.DefaultRowHeight := 24;
-  aGridWeather.ColCount := 5;
+  if aGridWeather.Tag = 3 then
+    aGridWeather.ColCount := 4
+    else aGridWeather.ColCount := 5;
   aGridWeather.RowCount := 1;
   aGridWeather.Columns[0].Width := 51;
   aGridWeather.Columns[1].Width := 51;
   aGridWeather.Columns[2].Width := 51;
   aGridWeather.Columns[3].Width := 51;
-  aGridWeather.Columns[4].Width := 51;
+  if aGridWeather.Tag = 0 then
+    aGridWeather.Columns[4].Width := 51;
   aGridWeather.Rows[0].Height := 24;
 
   aGridWeather.Height := 24;
-  aGridWeather.Width := 51*5;
+
+  if aGridWeather.Tag = 3 then
+    aGridWeather.Width := 51*4
+  else aGridWeather.Width := 51*5;
 
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '0.bmp' );
@@ -593,30 +598,43 @@ begin
   aGridWeather.AddSE_Bitmap ( 3, 0, 1 , bmp, false );
   bmp.Free;
 
-  bmp := SE_bitmap.Create ( dir_bmpWeather + 'r.bmp' );
-  bmp.Stretch(51,24);
-  aGridWeather.AddSE_Bitmap ( 4, 0, 1 , bmp, false );
-  bmp.Free;
+  if aGridWeather.Tag = 0 then begin
+    bmp := SE_bitmap.Create ( dir_bmpWeather + 'r.bmp' );
+    bmp.Stretch(51,24);
+    aGridWeather.AddSE_Bitmap ( 4, 0, 1 , bmp, false );
+    bmp.Free;
+  end;
 
   aGridWeather.CellsEngine.ProcessSprites(20);
   aGridWeather.RefreshSurface ( aGridWeather );
 
 end;
-procedure TForm1.SelectSetupWeather ( Col : integer);
+procedure TForm1.SelectSetupWeather (aGridWeather: Se_grid; Col : integer);
 begin
-  ResetSetupWeather ( SE_GridWeather ) ;
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,23);
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,23);
-  SE_GridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
-  SE_GridWeather.CellsEngine.ProcessSprites(20);
-  SE_GridWeather.RefreshSurface ( SE_GridWeather );
+  ResetSetupWeather ( aGridWeather ) ;
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,23);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,23);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
+  aGridWeather.CellsEngine.ProcessSprites(20);
+  aGridWeather.RefreshSurface ( aGridWeather );
 
-  if Col = 4 then
-    Brain.Weather := Brain.rndGenerate0 ( 4 )
-    else Brain.Weather := Col;
+  if aGridWeather = Form1.SE_GridWeather then begin // solo panelMain
+
+    if Col = 4 then
+      Brain.Weather := Brain.rndGenerate0 ( 3 )
+      else Brain.Weather := Col;
+
+    case Brain.Weather of
+      0: Brain.Track :=0;
+      1: Brain.Track :=0;
+      2: Brain.Track :=0;
+      3: Brain.Track :=1;
+    end;
+  end;
+
 end;
 procedure TForm1.ResetSetupQual;
 var
@@ -704,7 +722,7 @@ end;
 
 procedure TForm1.SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;  Sprite: SE_Sprite);
 begin
-  SelectSetupWeather ( CellX );
+  SelectSetupWeather ( SE_GridWeather, CellX );
 end;
 procedure TForm1.tcpDataAvailable(Sender: TObject; ErrCode: Word);
 var
@@ -782,11 +800,6 @@ begin
 
 //    MemoC.Lines.Add( 'normal size: ' + IntToStr(Len) );
 
-      if Brain.Track = TrackDry then
-        Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
-        else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
-      Form3.setupQ;
-      Form3.Show;
 
     MM.Free;
 
@@ -844,8 +857,21 @@ begin
   cur := cur + 1 ;
   Brain.Stage :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
+
+  if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then begin
+    if Brain.Track = TrackDry then
+      Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
+      else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
+    Form3.Show;
+    Form3.setupQ;
+    Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
+    Exit;
+  end;
+
   Brain.CurrentCar :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
+
+
 
 
 //  MyBrain.Score.TeamGuid [0] :=  PDWORD(@buf3[incMove][ cur ])^;

@@ -398,6 +398,7 @@ begin
   mm := TMemoryStream.Create;
 
   carSprite:=  SE_EngineCars.CreateSprite( dir_Cars + '1.bmp', 'car',1,1,1000,0,0,true);
+  carSprite.Scale := 86;
   carSprite.Visible := False;
 
 end;
@@ -795,9 +796,8 @@ begin
   SE_Theater1.Active := False;
   aSprite := SE_Sprite.Create (dir_circuits + JustNameL ( StringGrid2.Cells[0,aRow] )+'.bmp','circuit',1,1,1000,0,0,false );
 
-  for i := 0 to SE_Theater1.EngineCount -1 do begin
-    SE_Theater1.Engines [i].RemoveAllSprites;
-  end;
+  SE_Engine1.RemoveAllSprites;
+  SE_Engine2.RemoveAllSprites;
   SelectedCell := nil;
 
   SE_Theater1.VirtualWidth := aSprite.BMP.Width;

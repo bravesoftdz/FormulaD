@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls;
 
 type
   TForm3 = class(TForm)
@@ -19,6 +19,9 @@ type
     SE_GridEngine: SE_Grid;
     SE_GridGear: SE_Grid;
     SE_GridSuspension: SE_Grid;
+    lblWeather: TLabel;
+    lblTrack: TLabel;
+    lblPoints: TLabel;
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
@@ -54,12 +57,17 @@ begin
   btnTiresWet.Glyph.LoadFromFile( dir_tmp  + 'TiresWet.bmp' );
   btnTiresWet.NumGlyphs := 1;
 
+
+
 end;
 
 procedure TForm3.SetupQ;   // abilita btn scelta gomme
 begin
   SE_GridCars.Visible := False;
   // wet dry dipende dal brain
+  if Brain.Track = 0 then
+    btnTiresDry.Down := True
+    else btnTiresWet.Down := True;
 end;
 procedure TForm3.SetupPitStop;  // abilita img mechanic points, btn scelta gomme, continue, leave box
 begin

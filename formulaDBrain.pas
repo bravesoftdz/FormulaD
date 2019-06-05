@@ -229,6 +229,7 @@ var
   str : AnsiString;
   CompressedStream: TZCompressionStream;
   DeCompressedStream: TZDeCompressionStream;
+  Dummy : SmallInt;
 begin
   // il formato dei dati è proprietario. byte per byte salvo in memoria ciò che serve.
   // MMbrainData contiene lo streaming
@@ -238,6 +239,7 @@ begin
   // lista car
   // (l'animazione è il path della Car)
   // Info --> crash, consumo freni, gomme, eliminazione, cambio clima ecc.... e mappa dei debris
+  Dummy:=0;
   ISMARK [0] := 'I';
   ISMARK [1] := 'S';
   MMbraindata.Clear;
@@ -260,7 +262,12 @@ begin
     MMbraindata.Write( @lstCars[i].Username [0], length ( lstCars[i].Username) +1 );      // +1 byte 0 indica lunghezza stringa
     MMbraindata.Write( @lstCars[i].CarColor, sizeof(Byte) );  // il bmp
     MMbraindata.Write( @lstCars[i].Box, sizeof(Byte) );  // il box sulla mappa sul quale mi devo fermare
+
+    if lstCars[i].Cell = nil then
+      MMbraindata.Write( @Dummy, sizeof(SmallInt) )    // in fase di setup la cell non è assegnata
+    else
     MMbraindata.Write( @lstCars[i].Cell.Guid, sizeof(SmallInt) );
+
     MMbraindata.Write( @lstCars[i].Tires, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Brakes, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Gear, sizeof(ShortInt) );

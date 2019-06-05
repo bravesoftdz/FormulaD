@@ -27,7 +27,7 @@ object Form1: TForm1
     TabOrder = 0
     object btnCreateGame: TCnSpeedButton
       Left = 3
-      Top = 17
+      Top = 11
       Width = 233
       Height = 32
       Cursor = crHandPoint

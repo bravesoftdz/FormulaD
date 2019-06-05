@@ -5,7 +5,7 @@ object Form3: TForm3
   BorderStyle = bsSingle
   ClientHeight = 406
   ClientWidth = 511
-  Color = clBtnFace
+  Color = 8081721
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -17,8 +17,8 @@ object Form3: TForm3
   PixelsPerInch = 96
   TextHeight = 13
   object imgTrack: TImage
-    Left = 40
-    Top = 7
+    Left = 80
+    Top = 8
     Width = 49
     Height = 24
     Picture.Data = {
@@ -218,8 +218,51 @@ object Form3: TForm3
     GroupIndex = 1
     Margin = 4
   end
+  object lblWeather: TLabel
+    Left = 172
+    Top = 13
+    Width = 50
+    Height = 16
+    AutoSize = False
+    Caption = 'Weather:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clYellow
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lblTrack: TLabel
+    Left = 8
+    Top = 13
+    Width = 50
+    Height = 16
+    AutoSize = False
+    Caption = 'Track:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clYellow
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lblPoints: TLabel
+    Left = 240
+    Top = 78
+    Width = 50
+    Height = 16
+    AutoSize = False
+    Caption = 'Points:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clYellow
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
   object SE_GridWeather: SE_Grid
-    Left = 156
+    Tag = 3
+    Left = 228
     Top = 8
     Width = 256
     Height = 24
@@ -253,8 +296,8 @@ object Form3: TForm3
     Font.Style = []
   end
   object SE_GridCars: SE_Grid
-    Left = 8
-    Top = 48
+    Left = 21
+    Top = 122
     Width = 121
     Height = 169
     Cursor = crHandPoint
