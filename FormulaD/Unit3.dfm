@@ -2,8 +2,9 @@ object Form3: TForm3
   Left = 0
   Top = 0
   BorderIcons = []
-  ClientHeight = 396
-  ClientWidth = 501
+  BorderStyle = bsSingle
+  ClientHeight = 406
+  ClientWidth = 511
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -196,6 +197,7 @@ object Form3: TForm3
     Top = 48
     Width = 32
     Height = 24
+    Cursor = crHandPoint
     Color = clBtnFace
     DownBold = False
     FlatBorder = False
@@ -208,6 +210,7 @@ object Form3: TForm3
     Top = 48
     Width = 32
     Height = 24
+    Cursor = crHandPoint
     Color = clBtnFace
     DownBold = False
     FlatBorder = False
@@ -220,7 +223,6 @@ object Form3: TForm3
     Top = 8
     Width = 256
     Height = 24
-    Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
     MouseWheelInvert = False
     MouseWheelValue = 10

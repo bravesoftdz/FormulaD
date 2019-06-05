@@ -235,7 +235,7 @@ begin
         aCar.Guid := r ;
         aCar.CliId := 0;
         aCar.AI := True;
-        aCar.UserName := SE_GridSetupPlayers.Cells[0,r].Text;
+        aCar.UserName := SE_GridSetupPlayers.Cells[1,r].Text;
         aCar.CarColor := StrToInt( SE_GridSetupPlayers.Cells[0,r].ids );
         aCar.box := aCar.CarColor;
 
@@ -801,9 +801,10 @@ var
   totCars, totPath: Byte;
   aSprite: se_Sprite;
   aCellGuid : SmallInt;
-  i,ii , aCellX,aCellY: integer;
-  aGuid,aBox,aTires,aBrakes,aGear,aBody,anEngine,aSuspension: Byte;
+  i,p: integer;
+  aGuid,aBox,aTires,aBrakes,aGear,aBody,anEngine,aSuspension,aPathCount: Byte;
   aCell: TCell;
+  PathX,PathY:integer;
   aPoint : TPoint;
   aUserName: string;
   aCar : TCar;
@@ -887,6 +888,18 @@ begin
     aSuspension := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
 
+    aPathCount := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
+
+    for p := 0 to aPathCount -1 do begin
+      PathX := PDWORD(@buf3[incMove][ cur ])^;
+      Cur := Cur + 4 ;
+      PathY := PDWORD(@buf3[incMove][ cur ])^;
+      Cur := Cur + 4 ;
+      aCar.Path.Add( Point(PathX,PathY) );
+    end;
+
+
     if FirstTime then begin
       aCar := TCar.Create;
       aCar.Guid := aGuid ;
@@ -910,6 +923,7 @@ begin
     aCar.Engine := anEngine;
     aCar.Suspension := aSuspension;
     aCell := GetCell ( aCellGuid );
+    aCar.Cell  := aCell;
 
 
     if FirstTime then begin
@@ -922,10 +936,10 @@ begin
     end;
 
 
-    aCar.Se_Sprite.PositionX := aCell.PixelX;
-    aCar.Se_Sprite.PositionY := aCell.PixelY;
+    aCar.Se_Sprite.PositionX := aCar.Cell.PixelX;
+    aCar.Se_Sprite.PositionY := aCar.Cell.PixelY;
 //    aCar.Se_Sprite.Angle :=
-    aCar.Se_Sprite.MoverData.Destination := Point ( aCell.PixelX, aCell.PixelY );
+    aCar.Se_Sprite.MoverData.Destination := Point ( aCar.Cell.PixelX, aCar.Cell.PixelY );
 
     if (Brain.Stage = StageQualifications) or (Brain.Stage = StageRace) then
       aCar.SE_Sprite.Visible := True;
