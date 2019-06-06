@@ -140,7 +140,7 @@ var
   MM3 : array [0..255] of TMemoryStream;  // copia di cui sopra ma in formato stream, per un accesso rapido a certe informazioni
 
   MyCarAccount,LastTcpincMove,CurrentIncMove: byte;
-  BmpTiresDry, BmpTiresWet : SE_Bitmap;
+  BmpTiresDry, BmpTiresWet, bmpPlus, bmpMinus : SE_Bitmap;
 
 implementation
 uses Unit3;
@@ -284,6 +284,7 @@ begin
 end;
 procedure TForm1.InitializeCar ( aCar : Tcar );
 begin
+  aCar.TiresType := 0;
 
   aCar.Tires := 1;
   aCar.Brakes := 1;
@@ -602,6 +603,10 @@ procedure TForm1.FormDestroy(Sender: TObject);
 var
   i: Integer;
 begin
+  BmpTiresDry.Free;
+  BmpTiresWet.Free;
+  BmpPlus.Free;
+  BmpMinus.Free;
   mm.Free;
   for I := 0 to 255 do begin
     MM3[i].Free;
@@ -873,7 +878,7 @@ var
   aSprite: se_Sprite;
   aCellGuid : SmallInt;
   i,p: integer;
-  aGuid,aBox,aTires,aBrakes,aGear,aBody,anEngine,aSuspension,aPathCount: Byte;
+  aGuid,aBox,aTiresType,aTires,aBrakes,aGear,aBody,anEngine,aSuspension,aPathCount: Byte;
   aTiresMax,aBrakesMax,aGearMax,aBodyMax,anEngineMax,aSuspensionMax: Byte;
   aCell: TCell;
   PathX,PathY:integer;
@@ -952,6 +957,8 @@ begin
     aCellGuid := PWORD(@buf3[incMove][ cur ])^;
     Cur := Cur + 2 ;
 
+    aTiresType := Ord( buf3[incMove][ cur ]);
+    Cur := Cur + 1 ;
     aTires := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
     aBrakes := Ord( buf3[incMove][ cur ]);
@@ -1005,6 +1012,7 @@ begin
     end;
 
 //    aCar.lastGear
+    aCar.TiresType := aTiresType;
     aCar.Tires := aTires;
     aCar.Brakes := aBrakes;
     aCar.Gear := aGear;

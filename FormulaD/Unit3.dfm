@@ -204,6 +204,7 @@ object Form3: TForm3
     HotTrackBold = False
     GroupIndex = 1
     Margin = 4
+    OnClick = btnTiresDryClick
   end
   object btnTiresWet: TCnSpeedButton
     Left = 278
@@ -217,6 +218,7 @@ object Form3: TForm3
     HotTrackBold = False
     GroupIndex = 1
     Margin = 4
+    OnClick = btnTiresWetClick
   end
   object lblWeather: TLabel
     Left = 156

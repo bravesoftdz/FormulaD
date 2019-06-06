@@ -57,6 +57,7 @@ type TCar = Class
   SE_Sprite : SE_Sprite;
   Path : TList<TPoint>;
 
+  TiresType : Byte;
   Tires : ShortInt;
   Brakes: ShortInt;
   Gear: ShortInt;
@@ -269,6 +270,7 @@ begin
     else
     MMbraindata.Write( @lstCars[i].Cell.Guid, sizeof(SmallInt) );
 
+    MMbraindata.Write( @lstCars[i].TiresType, sizeof(Byte) );
     MMbraindata.Write( @lstCars[i].Tires, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Brakes, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].Gear, sizeof(ShortInt) );
