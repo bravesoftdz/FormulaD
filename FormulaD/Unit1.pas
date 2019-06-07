@@ -99,7 +99,8 @@ type
     procedure TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
     procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
 
-        function validate_setupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
+        function validate_and_WriteSetupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
+        procedure LoadCarRndPreset ( aCar : TCar );
 
     procedure tcpSessionConnected(Sender: TObject; ErrCode: Word);
     procedure tcpDataAvailable(Sender: TObject; ErrCode: Word);
@@ -439,14 +440,14 @@ begin
   cbCarSetup.Clear;
 
   if (cbLaps.Text = '1')  then begin
-    cbCarSetup.Items.Add( '15 Free Points');  // x1 lap
+    cbCarSetup.Items.Add( '15 Free Points');  // x1 lap  4-3-2-2-2-2
   end;
   if (cbLaps.Text ='2') then begin
-//    cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap        4-3-2-2-2 2m  6-4-3-3-3 2m
+//    cbCarSetup.Items.Add( 'Preset');  // x1 x2  lap         6-3-3-2-2-2   + 2 meccanici
     cbCarSetup.Items.Add( '18 Free Points');  // x1 x2  lap
   end
   else if cbLaps.Text = '3' then begin
-    cbCarSetup.Items.Add( '20 Points limit 14/7');
+    cbCarSetup.Items.Add( '20 Points limit 14/7');         //6-3-3-3-3-2
   end;
   cbCarSetup.ItemIndex := 0;
 
@@ -1159,7 +1160,48 @@ begin
 
 
 end;
-function TForm1.validate_setupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
+procedure TForm1.LoadCarRndPreset ( aCar : TCar );
+begin
+// preset lap 1,2,3  4-3-2-2-2-2  6-3-3-2-2-2  6-3-3-3-3-2
+  aCar.TiresType := Brain.Track; // se piove setta le gomme da pioggia
+
+  if brain.Laps = 1 then begin
+    aCar.TiresMax     := 4 ;
+    aCar.BrakesMax    := 3 ;
+    aCar.GearMax      := 2;
+    aCar.BodyMax      := 2;
+    aCar.EngineMax    := 2;
+    aCar.SuspensionMax := 2;
+
+  end
+  else if brain.Laps = 2 then begin
+    aCar.TiresMax     := 6 ;
+    aCar.BrakesMax    := 3 ;
+    aCar.GearMax      := 3;
+    aCar.BodyMax      := 2;
+    aCar.EngineMax    := 2;
+    aCar.SuspensionMax := 2;
+
+  end
+  else if brain.Laps = 3 then begin
+    aCar.TiresMax     := 6 ;
+    aCar.BrakesMax    := 3 ;
+    aCar.GearMax      := 3;
+    aCar.BodyMax      := 3;
+    aCar.EngineMax    := 3;
+    aCar.SuspensionMax := 2;
+
+  end;
+
+  aCar.Tires := aCar.TiresMax;
+  aCar.Brakes :=  aCar.BrakesMax;
+  aCar.Gear := aCar.GearMax;
+  aCar.Body :=  aCar.BodyMax;
+  aCar.Engine :=  aCar.EngineMax;
+  aCar.Suspension := aCar.SuspensionMax;
+
+end;
+function TForm1.validate_and_WriteSetupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
 var
   aCar : TCar;
   ts : TStringList;
@@ -1221,6 +1263,7 @@ var
     RcvdLine: string;
     ts: TStringList;
     i: Integer;
+    aCar : TCar;
 begin
   Cli := Sender as TWSocketThrdClient;
 
@@ -1283,19 +1326,46 @@ begin
   else if ts[0] ='SQ' then begin // setup Qualifications
     if Brain.Stage <> StageSetupQ then Exit;
 
-    if validate_setupCar ( Cli, ts.CommaText ) then begin
+    if validate_and_WriteSetupCar ( Cli, ts.CommaText ) then begin
+      aCar := Brain.FindCar( cli.Account );
+      aCar.ConfirmedSetupQ := True;
       // se tutte le car sono validate le cpu si autosettano con dei preset
+      for I := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin
+        if not brain.lstCars[i].ConfirmedSetupQ then
+          Exit;
+      end;
+      // setto le cpu rimanenti
+      for I := StrToInt( cbHumanPlayers.Text ) to SE_GridSetupPlayers.RowCount -1 do begin
+        aCar := brain.lstCars[i];
+        LoadCarRndPreset ( aCar );
+        aCar.ConfirmedSetupQ := true;
+      end;
+
+    //  StartQualifications;
     end;
+
   end
   else if ts[0] ='SR' then begin // setup Race
     if Brain.Stage <> StageSetupRace then Exit;
 
-    if validate_setupCar ( Cli, ts.CommaText ) then begin
+    if validate_and_WriteSetupCar ( Cli, ts.CommaText ) then begin
+      aCar.ConfirmedSetupR := True;
       // se tutte le car sono validate le cpu si autosettano con dei preset
+      for I := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin
+        if not brain.lstCars[i].ConfirmedSetupR then
+          Exit;
+      end;
+      // setto le cpu rimanenti
+      for I := StrToInt( cbHumanPlayers.Text ) to SE_GridSetupPlayers.RowCount -1 do begin
+        aCar := brain.lstCars[i];
+        LoadCarRndPreset ( aCar );
+        aCar.ConfirmedSetupQ := true;
+        brain.lstCars[i].ConfirmedSetupR := true;
+      end;
+//      StartRace;
 
     end;
   end;
-
 
 end;
 

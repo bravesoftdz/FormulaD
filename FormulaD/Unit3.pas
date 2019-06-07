@@ -9,7 +9,6 @@ Type TStat = ( statTires, StatBrakes, StatGear, StatBody, StatEngine, StatSuspen
 type
   TForm3 = class(TForm)
     SE_GridWeather: SE_Grid;
-    SE_GridCars: SE_Grid;
     imgTrack: TImage;
     SE_GridTires: SE_Grid;
     btnTiresDry: TCnSpeedButton;
@@ -174,7 +173,7 @@ procedure TForm3.SetupQ;   // abilita btn scelta gomme
 var
   aCar : TCar;
 begin
-  SE_GridCars.Visible := False;
+
   // wet dry dipende dal brain
   if Brain.Track = 0 then
     btnTiresDry.Down := True
@@ -245,7 +244,7 @@ var
   aCar : TCar;
 begin
   // sono visibili i pulsanti per settare i points fino a 2 punti meccanici
-  SE_GridCars.Visible := False;
+
   // wet dry dipende dal brain
   if Brain.Track = 0 then
     btnTiresDry.Down := True
