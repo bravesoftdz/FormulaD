@@ -603,6 +603,9 @@ procedure TForm1.FormDestroy(Sender: TObject);
 var
   i: Integer;
 begin
+  Tcpserver.DisconnectAll;
+  Tcpserver.Close;
+  Tcpserver.Free;
   BmpTiresDry.Free;
   BmpTiresWet.Free;
   BmpPlus.Free;
@@ -612,6 +615,7 @@ begin
     MM3[i].Free;
   end;
   Brain.Free;
+
 end;
 
 procedure TForm1.ResetSetupWeather ( aGridWeather: Se_grid);
@@ -925,6 +929,8 @@ begin
   Brain.CurrentCar :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
 
+  Brain.Laps :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
 
 
 
@@ -1051,12 +1057,27 @@ begin
 
   end;
 
-  if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then begin
+  if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace)  or (brain.Stage = StagePitStop) then begin
     if Brain.Track = TrackDry then
       Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
       else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
+    if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then
+      Form3.lblPoints.Tag := Brain.CarSetupPoints - 6
+    else if (brain.Stage = StagePitStop) then
+      Form3.lblPoints.Tag := 2;
+
     Form3.Show;
-    Form3.setupQ;
+    if (Brain.Stage = StageSetupQ) then begin
+      Form3.setupQ;
+    end
+    else if (brain.Stage = StageSetupRace) then begin
+
+      Form3.setupR;
+    end
+    else if (brain.Stage = StagePitStop) then
+      Form3.setupPitStop;
+
+
     Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
   //  Exit;
   end;

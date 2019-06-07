@@ -334,7 +334,7 @@ object Form3: TForm3
   end
   object SE_GridTires: SE_Grid
     Left = 148
-    Top = 92
+    Top = 100
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -370,7 +370,7 @@ object Form3: TForm3
   end
   object SE_GridBrakes: SE_Grid
     Left = 148
-    Top = 122
+    Top = 154
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -396,6 +396,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 3
+    OnGridCellMouseDown = SE_GridBrakesGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -405,7 +406,7 @@ object Form3: TForm3
   end
   object SE_GridBody: SE_Grid
     Left = 148
-    Top = 152
+    Top = 201
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -439,8 +440,8 @@ object Form3: TForm3
     Font.Style = []
   end
   object SE_GridEngine: SE_Grid
-    Left = 156
-    Top = 182
+    Left = 148
+    Top = 247
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -474,8 +475,8 @@ object Form3: TForm3
     Font.Style = []
   end
   object SE_GridGear: SE_Grid
-    Left = 156
-    Top = 202
+    Left = 148
+    Top = 300
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -509,8 +510,8 @@ object Form3: TForm3
     Font.Style = []
   end
   object SE_GridSuspension: SE_Grid
-    Left = 156
-    Top = 232
+    Left = 148
+    Top = 330
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -544,8 +545,8 @@ object Form3: TForm3
     Font.Style = []
   end
   object Button1: TButton
-    Left = 184
-    Top = 328
+    Left = 197
+    Top = 373
     Width = 75
     Height = 25
     Caption = 'confirm'

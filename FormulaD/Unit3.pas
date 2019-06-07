@@ -29,13 +29,15 @@ type
       Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
     procedure btnTiresWetClick(Sender: TObject);
+    procedure SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
   private
     { Private declarations }
   public
     { Public declarations }
     procedure SetupQ;
     procedure SetupPitStop;
-    procedure SetupRace;
+    procedure SetupR;
 
 
     procedure ShowCarStat ( Editing : boolean; CarAccount : Byte; Stat : TStat );
@@ -53,20 +55,27 @@ var
   aCar : TCar;
 begin
   //if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
-  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  aCar.TiresType := 0;
-  ShowcarStat( True, MycarAccount, StatTires );
-
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) or  (Brain.Stage = StagePitStop) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+    aCar.TiresType := 0;
+    aCar.Tires :=  aCar.TiresMax;
+    ShowcarStat( True, MycarAccount, StatTires );
+  end;
 end;
 
 procedure TForm3.btnTiresWetClick(Sender: TObject);
 var
   aCar : TCar;
 begin
-  //if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
-  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  aCar.TiresType := 1;
-  ShowcarStat( True, MycarAccount, StatTires );
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) or  (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop non può modificare le tires, ma solo cambiare l'intero treno
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+    aCar.TiresType := 1;
+    aCar.Tires :=  aCar.TiresMax;
+    aCar.TiresMax := Brain.CarSetupPoints - 6;
+  end;
+
 
 end;
 
@@ -119,6 +128,8 @@ begin
 end;
 
 procedure TForm3.SetupQ;   // abilita btn scelta gomme
+var
+  aCar : TCar;
 begin
   SE_GridCars.Visible := False;
   // wet dry dipende dal brain
@@ -126,8 +137,17 @@ begin
     btnTiresDry.Down := True
     else btnTiresWet.Down := True;
 
-  lblPoints.Caption := 'Points: ' + IntToStr( Brain.CarSetupPoints );
+  lblPoints.Tag := Brain.CarSetupPoints -6;
+  lblPoints.Caption := 'Points: ' + IntToStr( lblPoints.Tag );
   // sono visibili i pulsanti per settare i points
+
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  aCar.TiresMax := Brain.CarSetupPoints - 6;
+  aCar.BrakesMax := Brain.CarSetupPoints - 6;
+  if Brain.laps = 3 then begin
+    aCar.TiresMax := 14;
+    aCar.BrakesMax := 7;
+  end;
 
   ShowcarStat ( True, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
   ShowcarStat ( True, MyCarAccount, StatBrakes );
@@ -137,31 +157,118 @@ begin
   ShowcarStat ( True, MyCarAccount, StatSuspension );
 
 end;
-procedure TForm3.SetupPitStop;  // abilita img mechanic points, btn scelta gomme, continue, leave box
-begin
-  // sono visibili i pulsanti per settare i points fino a 2 punti meccanici
-  // le gomme sono solo settabili dai due btn come treno nuovo
-end;
-procedure TForm3.SetupRace; // abilita lista cars , btn gear 1-6
+procedure TForm3.SetupR; // abilita lista cars , btn gear 1-6
+var
+  aCar : TCar;
 begin
   // Nessun pulsate per edting è visibile
   btnTiresDry.Visible := false;
   btnTiresWet.Visible := false;
+
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  aCar.TiresMax := Brain.CarSetupPoints - 6;
+  if Brain.laps = 3 then
+    aCar.TiresMax := 14;
+
+  ShowcarStat ( False, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
+  ShowcarStat ( False, MyCarAccount, StatBrakes );
+  ShowcarStat ( False, MyCarAccount, StatGear );
+  ShowcarStat ( False, MyCarAccount, StatBody );
+  ShowcarStat ( False, MyCarAccount, StatEngine );
+  ShowcarStat ( False, MyCarAccount, StatSuspension );
+
 end;
+procedure TForm3.SetupPitStop;  // abilita img mechanic points, btn scelta gomme, continue, leave box
+var
+  aCar : TCar;
+begin
+  // sono visibili i pulsanti per settare i points fino a 2 punti meccanici
+  SE_GridCars.Visible := False;
+  // wet dry dipende dal brain
+  if Brain.Track = 0 then
+    btnTiresDry.Down := True
+    else btnTiresWet.Down := True;
+
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  aCar.Tires := aCar.TiresMax;
+
+  lblPoints.Tag := 2;
+  lblPoints.Caption := 'Points: 2';
+  // sono visibili i pulsanti per settare i points
+
+  ShowcarStat ( True, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
+  ShowcarStat ( True, MyCarAccount, StatBrakes );
+  ShowcarStat ( True, MyCarAccount, StatGear );
+  ShowcarStat ( True, MyCarAccount, StatBody );
+  ShowcarStat ( True, MyCarAccount, StatEngine );
+  ShowcarStat ( True, MyCarAccount, StatSuspension );
+
+  // le gomme sono solo settabili dai due btn come treno nuovo
+end;
+procedure TForm3.SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  aCar : TCar;
+begin
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Brakes + 1 <= aCar.BrakesMax  then begin // riferimento ai points del setup
+          aCar.Brakes := aCar.Brakes + 1;
+          lblPoints.Tag:=lblPoints.Tag-1;
+        end;
+      end;
+    end
+    else if CellX = 0 {Del}then begin
+      if aCar.Brakes > 1 then begin
+        aCar.Brakes := aCar.Brakes - 1;
+        lblPoints.Tag:=lblPoints.Tag+1;
+      end;
+    end;
+    ShowcarStat ( True, MycarAccount, StatBrakes );
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
+        if aCar.Brakes + 1 <= aCar.BrakesMax  then begin // riferimento ai points del setup
+          aCar.Brakes := aCar.Brakes + 1;
+          lblPoints.Tag:=lblPoints.Tag-1;
+        end;
+      end;
+    end
+  end;
+
+end;
+
 procedure TForm3.SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
 var
   aCar : TCar;
 begin
-  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin  { TODO : fare pistop }
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
     aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
     if CellX = 1 {Add} then begin
-      aCar.Tires := aCar.Tires + 1;
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Tires + 1 <= aCar.TiresMax  then begin // riferimento ai points del setup
+          aCar.Tires := aCar.Tires + 1;
+          lblPoints.Tag:=lblPoints.Tag-1;
+        end;
+      end;
     end
     else if CellX = 0 {Del}then begin
-      if aCar.Tires > 1 then
+      if aCar.Tires > 1 then begin
         aCar.Tires := aCar.Tires - 1;
+        lblPoints.Tag:=lblPoints.Tag+1;
+      end;
     end;
     ShowcarStat ( True, MycarAccount, StatTires );
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop non può modificare le tires, ma solo cambiare l'intero treno
   end;
 
 end;
@@ -208,7 +315,7 @@ begin
     Grid := SE_GridEngine;
     Grid.ColCount := aCar.Engine;
     bmp := SE_Bitmap.Create ( dir_Cars + 'Engine.bmp');
-    w := 20;
+    w := 32;
     h := 24;
   end
   else if Stat = StatSuspension then begin
@@ -230,13 +337,16 @@ begin
 
   for I := 0 to Grid.ColCount -1 do begin
     Grid.Cells[i,0].BackColor:=  $007B5139;
-    Grid.Columns[i].Width := w;
+    if i > 1 then
+      Grid.Columns[i].Width := w
+      else Grid.Columns[i].Width := 20;
+
   end;
 
   Grid.Rows[0].Height := h;
-  Grid.Height := w;
+  Grid.Height := h;
 
-  Grid.Width := w* Grid.ColCount ;
+  Grid.Width := (w * (Grid.ColCount -2) ) + 40 ;  //<-- 20+20 di plus e minus
 
   if Editing then begin
     Grid.AddSE_Bitmap ( 0, 0, 1 , bmpMinus , true );

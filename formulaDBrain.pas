@@ -10,6 +10,7 @@ const StageSetupQ = 0;
 const StageQualifications = 1;
 const StageSetupRace = 2;
 const StageRace = 3;
+const StagePitStop = 4;
 
 const QualLap = 0;
 const QualRnd = 1;
@@ -94,6 +95,8 @@ type TFormulaDBrain = class
     Track : Byte; // 0 dry 1 wet
     Stage: Byte;
     CurrentCar: Byte;
+
+    Laps: Byte;
 
     lstCars: TObjectList<TCar>;
     Circuit : TObjectList<TCell>;
@@ -255,6 +258,7 @@ begin
   MMbraindata.Write( @Stage, SizeOf(Byte) );
   MMbraindata.Write( @CurrentCar, SizeOf(Byte) );
 
+  MMbraindata.Write( @Laps, SizeOf(Byte) );
 
   totCars :=  lstCars.Count ;
   MMbraindata.Write( @totCars, sizeof(byte) );
