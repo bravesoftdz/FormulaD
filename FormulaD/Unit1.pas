@@ -99,10 +99,14 @@ type
     procedure TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
     procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
 
+        function validate_setupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
+
     procedure tcpSessionConnected(Sender: TObject; ErrCode: Word);
     procedure tcpDataAvailable(Sender: TObject; ErrCode: Word);
 
     procedure FormDestroy(Sender: TObject);
+    procedure SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState;
+      var Handled: Boolean);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -334,10 +338,8 @@ begin
   for I := 0 to brain.lstCars.Count -1 do begin
     Brain.lstCars[i].SE_Sprite.PositionX := Brain.lstCars[i].Cell.PixelX;
     Brain.lstCars[i].SE_Sprite.PositionY := Brain.lstCars[i].Cell.PixelY;
-    { TODO : angle }
-    //    if StartingGrid then begin
-      Brain.lstCars[i].SE_Sprite.Angle := brain.CircuitDescr.CarAngle;
-//    end;
+    Brain.lstCars[i].SE_Sprite.Angle := Brain.lstCars[i].Cell.Angle;
+
     Brain.lstCars[i].SE_Sprite.Visible := True;
   end;
 end;
@@ -448,7 +450,7 @@ begin
   end;
   cbCarSetup.ItemIndex := 0;
 
-
+  Brain.Laps := StrToInt(cbLaps.text);
 end;
 
 procedure TForm1.RefreshPlayerCPU;
@@ -552,6 +554,7 @@ begin
   cbLaps.Items.Add('2');
   cbLaps.Items.Add('3');
   cbLaps.ItemIndex := 0;
+  Brain.Laps := StrToInt(cbLaps.text);
 
   for I := 1 to 10 do begin
     cbHumanPlayers.Items.add ( IntTostr(i));
@@ -790,6 +793,14 @@ procedure TForm1.SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouse
 begin
   SelectSetupWeather ( SE_GridWeather, CellX );
 end;
+procedure TForm1.SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState; var Handled: Boolean);
+begin
+//  Handled := True;
+//  if lstsprite[0].Engine = SE_EngineCars then
+//    Cursor := crHandPoint;
+
+end;
+
 procedure TForm1.tcpDataAvailable(Sender: TObject; ErrCode: Word);
 var
   LEN : Integer;
@@ -802,14 +813,7 @@ var
   MM,MM2 : TMemoryStream;
   label firstload;
 begin
- //   MMbraindata:= TMemoryStream.Create;
- //   MMbrainData.Size := TWSocket(Sender).BufSize;
- //   Len := TWSocket(Sender).Receive(MMbrainData.Memory , TWSocket(Sender).BufSize );
- //   SetString(aaa, PAnsiChar( MMbrainData.Memory ), MMbraindata.Size ); //div SizeOf(Char));
- //   MMbraindata.Free;
-//    Len := TCustomLineWSocket(Sender).Receive(@Buf, Sizeof(Buf) - 1);
 
-    // arrivano dati compressi solo dopo beginbrain e beginteam
 
     MM := TMemoryStream.Create;  // potrebbe anche non servire a nulla
     MM.Size := Sizeof(Buf) - 1;
@@ -1041,14 +1045,14 @@ begin
       aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
       aCar.SE_Sprite.Scale := 86;
       aCar.SE_Sprite.Visible := False;
- //     aCar.Se_Sprite.MoverData.Speed := DEFAULT_SPEED_PLAYER;
+      aCar.Se_Sprite.MoverData.Speed := 12;
 
     end;
 
 
     aCar.Se_Sprite.PositionX := aCar.Cell.PixelX;
     aCar.Se_Sprite.PositionY := aCar.Cell.PixelY;
-//    aCar.Se_Sprite.Angle :=
+    aCar.Se_Sprite.Angle := aCar.Cell.Angle;
     aCar.Se_Sprite.MoverData.Destination := Point ( aCar.Cell.PixelX, aCar.Cell.PixelY );
 
     if (Brain.Stage = StageQualifications) or (Brain.Stage = StageRace) then
@@ -1155,7 +1159,62 @@ begin
 
 
 end;
+function TForm1.validate_setupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
+var
+  aCar : TCar;
+  ts : TStringList;
+  i,TotPoints: Integer;
+begin
+  ts := TStringList.Create;
+  ts.CommaText := Commatext;
+  ts.Delete(0); // elimino Sq o SR
 
+  if ts.Count <> 7 then begin
+      result := False;
+      ts.Free;
+      Exit;
+  end;
+
+  TotPoints := 0;
+  for I := 0 to ts.Count -1 do begin
+    TotPoints := TotPoints + StrToIntdef(ts[i],-1);
+    if StrToIntDef(ts[i],-1) = -1 then begin // devono essere 7 numeri. tirestype + 6 stats
+      result := False;
+      ts.Free;
+      Exit;
+    end;
+  end;
+
+  if totPoints + 6 <> brain.CarSetupPoints then begin
+      result := False;
+      ts.Free;
+      Exit;
+  end;
+
+  aCar := brain.FindCar( Cli.Account ); // account = aCar.Guid
+  aCar.TiresType := StrToInt(ts[0] ) ;
+
+  if (brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace) then begin
+
+    aCar.TiresMax := StrToInt(ts[1] ) ;
+    aCar.BrakesMax := StrToInt(ts[2] ) ;
+    aCar.GearMax := StrToInt(ts[3] ) ;
+    aCar.BodyMax := StrToInt(ts[4] ) ;
+    aCar.EngineMax := StrToInt(ts[5] ) ;
+    aCar.SuspensionMax := StrToInt(ts[6] ) ;
+
+    aCar.Tires := StrToInt(ts[1] ) ;
+    aCar.Brakes := StrToInt(ts[2] ) ;
+    aCar.Gear := StrToInt(ts[3] ) ;
+    aCar.Body := StrToInt(ts[4] ) ;
+    aCar.Engine := StrToInt(ts[5] ) ;
+    aCar.Suspension := StrToInt(ts[6] ) ;
+
+  end;
+
+  ts.Free;
+  Result := True;
+end;
 procedure TForm1.TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
 var
     Cli: TWSocketThrdClient;
@@ -1220,6 +1279,21 @@ begin
 
     // se non è uscito con exit sopra, ci sono tutti i client collegati
     btnStartGame.Enabled := True;
+  end
+  else if ts[0] ='SQ' then begin // setup Qualifications
+    if Brain.Stage <> StageSetupQ then Exit;
+
+    if validate_setupCar ( Cli, ts.CommaText ) then begin
+      // se tutte le car sono validate le cpu si autosettano con dei preset
+    end;
+  end
+  else if ts[0] ='SR' then begin // setup Race
+    if Brain.Stage <> StageSetupRace then Exit;
+
+    if validate_setupCar ( Cli, ts.CommaText ) then begin
+      // se tutte le car sono validate le cpu si autosettano con dei preset
+
+    end;
   end;
 
 

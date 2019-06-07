@@ -624,6 +624,7 @@ object Form1: TForm1
     GridHexSmallWidth = 10
     CollisionDelay = 0
     ShowPerformance = False
+    OnSpriteMouseMove = SE_Theater1SpriteMouseMove
     VirtualWidth = 212
     Virtualheight = 212
     TabOrder = 3

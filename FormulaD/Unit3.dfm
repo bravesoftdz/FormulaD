@@ -193,7 +193,7 @@ object Form3: TForm3
     Stretch = True
   end
   object btnTiresDry: TCnSpeedButton
-    Left = 240
+    Left = 72
     Top = 48
     Width = 32
     Height = 24
@@ -207,7 +207,7 @@ object Form3: TForm3
     OnClick = btnTiresDryClick
   end
   object btnTiresWet: TCnSpeedButton
-    Left = 278
+    Left = 110
     Top = 48
     Width = 32
     Height = 24
@@ -255,6 +255,41 @@ object Form3: TForm3
     Height = 16
     AutoSize = False
     Caption = 'Points:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clYellow
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object btnConfirmSetup: TCnSpeedButton
+    Left = 219
+    Top = 366
+    Width = 91
+    Height = 32
+    Cursor = crHandPoint
+    Color = clGray
+    DownBold = False
+    FlatBorder = False
+    HotTrackBold = False
+    Caption = 'Confirm'
+    Enabled = False
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = 4308735
+    Font.Height = -21
+    Font.Name = 'Calibri'
+    Font.Style = [fsBold]
+    Margin = 4
+    ParentFont = False
+    OnClick = btnConfirmSetupClick
+  end
+  object lblTiresType: TLabel
+    Left = 8
+    Top = 48
+    Width = 50
+    Height = 16
+    AutoSize = False
+    Caption = 'Tires:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clYellow
     Font.Height = -13
@@ -406,7 +441,7 @@ object Form3: TForm3
   end
   object SE_GridBody: SE_Grid
     Left = 148
-    Top = 201
+    Top = 241
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -432,6 +467,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 4
+    OnGridCellMouseDown = SE_GridBodyGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -441,7 +477,7 @@ object Form3: TForm3
   end
   object SE_GridEngine: SE_Grid
     Left = 148
-    Top = 247
+    Top = 255
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -467,6 +503,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 5
+    OnGridCellMouseDown = SE_GridEngineGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -476,7 +513,7 @@ object Form3: TForm3
   end
   object SE_GridGear: SE_Grid
     Left = 148
-    Top = 300
+    Top = 184
     Width = 256
     Height = 24
     Cursor = crHandPoint
@@ -502,6 +539,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 6
+    OnGridCellMouseDown = SE_GridGearGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -537,6 +575,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 7
+    OnGridCellMouseDown = SE_GridSuspensionGridCellMouseDown
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -544,13 +583,20 @@ object Form3: TForm3
     Font.Name = 'Tahoma'
     Font.Style = []
   end
-  object Button1: TButton
-    Left = 197
+  object Button2: TButton
+    Left = 270
     Top = 373
     Width = 75
     Height = 25
-    Caption = 'confirm'
+    Caption = 'stay'
     TabOrder = 8
-    OnClick = Button1Click
+  end
+  object Button3: TButton
+    Left = 351
+    Top = 373
+    Width = 75
+    Height = 25
+    Caption = 'leave box'
+    TabOrder = 9
   end
 end

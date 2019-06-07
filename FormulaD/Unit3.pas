@@ -22,15 +22,26 @@ type
     lblWeather: TLabel;
     lblTrack: TLabel;
     lblPoints: TLabel;
-    Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    btnConfirmSetup: TCnSpeedButton;
+    lblTiresType: TLabel;
     procedure FormCreate(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
       Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
     procedure btnTiresWetClick(Sender: TObject);
     procedure SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
       Sprite: SE_Sprite);
+    procedure SE_GridBodyGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
+      Sprite: SE_Sprite);
+    procedure btnConfirmSetupClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -50,17 +61,44 @@ implementation
 uses Unit1, formulaDBrain;
 
 {$R *.dfm}
+procedure TForm3.btnConfirmSetupClick(Sender: TObject);
+var
+  aCar : TCar;
+  prefix: Char;
+begin
+  if (Brain.Stage = StageSetupQ) then
+    prefix := 'Q'
+  else if (Brain.Stage = StageSetupRace) then
+    prefix := 'R';
+
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  Form1.tcp.SendStr( 'S' + prefix + ',' + IntTostr(aCar.TiresType) + ','
+                     + IntTostr(aCar.TiresMax)+ ','
+                     + IntTostr(aCar.BrakesMax) + ','
+                     + IntTostr(aCar.GearMax)+ ','
+                     + IntTostr(aCar.BodyMax)+ ','
+                     + IntTostr(aCar.EngineMax)+ ','
+                     + IntTostr(aCar.Suspension)
+                     + EndofLine );
+end;
+
 procedure TForm3.btnTiresDryClick(Sender: TObject);
 var
   aCar : TCar;
 begin
   //if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
-  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) or  (Brain.Stage = StagePitStop) then begin
-    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace)  then begin
     aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
     aCar.TiresType := 0;
-    aCar.Tires :=  aCar.TiresMax;
-    ShowcarStat( True, MycarAccount, StatTires );
+    aCar.Tires :=  SE_GridTires.ColCount -2;
+     ShowcarStat( true, MycarAccount, StatTires );
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+    aCar.TiresType := 0;
+    aCar.Tires :=  SE_GridTires.ColCount;
+    ShowcarStat( False, MycarAccount, StatTires )
+
   end;
 end;
 
@@ -68,24 +106,19 @@ procedure TForm3.btnTiresWetClick(Sender: TObject);
 var
   aCar : TCar;
 begin
-  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) or  (Brain.Stage = StagePitStop) then begin
-    // durante il pitstop non può modificare le tires, ma solo cambiare l'intero treno
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace)  then begin
     aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
     aCar.TiresType := 1;
-    aCar.Tires :=  aCar.TiresMax;
-    aCar.TiresMax := Brain.CarSetupPoints - 6;
+    aCar.Tires :=  SE_GridTires.ColCount -2;
+    ShowcarStat( true, MycarAccount, StatTires );
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+    aCar.TiresType := 1;
+    aCar.Tires :=  SE_GridTires.ColCount;
+    ShowcarStat( False, MycarAccount, StatTires )
+
   end;
-
-
-end;
-
-procedure TForm3.Button1Click(Sender: TObject);
-begin
-  // il client conferma i car setup points. CliId con username fa fede per la car assegnata
-  // setupQ e SetupR --> setta i tiresMAX ecc.. di nuovo
-  // il server ottenuti tutti gli input dal client vengono settati i preset per le CPU
-
-  // durante il pitstop viene mostrata la car MyCarAccount
 
 
 end;
@@ -124,6 +157,16 @@ begin
   BmpPlus := SE_Bitmap.Create (dir_tmp  + 'plus.bmp');
   BmpMinus := SE_Bitmap.Create (dir_tmp  + 'Minus.bmp');
 
+  SE_GridBrakes.left := SE_GridTires.Left;
+  SE_GridBrakes.Top := SE_GridTires.Top + SE_GridTires.Height;
+  SE_GridGear.left := SE_GridTires.Left;
+  SE_GridGear.Top := SE_GridBrakes.Top + SE_GridBrakes.Height;
+  SE_GridBody.left := SE_GridTires.Left;
+  SE_GridBody.Top := SE_GridGear.Top + SE_GridGear.Height;
+  SE_GridEngine.left := SE_GridTires.Left;
+  SE_GridEngine.Top := SE_GridBody.Top + SE_GridBody.Height;
+  SE_GridSuspension.left := SE_GridTires.Left;
+  SE_GridSuspension.Top := SE_GridEngine.Top + SE_GridEngine.Height;
 
 end;
 
@@ -144,9 +187,17 @@ begin
   aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
   aCar.TiresMax := Brain.CarSetupPoints - 6;
   aCar.BrakesMax := Brain.CarSetupPoints - 6;
+  aCar.BodyMax := Brain.CarSetupPoints - 6;
+  aCar.GearMax := Brain.CarSetupPoints - 6;
+  aCar.EngineMax := Brain.CarSetupPoints - 6;
+  aCar.SuspensionMax := Brain.CarSetupPoints - 6;
   if Brain.laps = 3 then begin
     aCar.TiresMax := 14;
     aCar.BrakesMax := 7;
+    aCar.BodyMax := 7;
+    aCar.GearMax := 7;
+    aCar.EngineMax := 7;
+    aCar.SuspensionMax := 7;
   end;
 
   ShowcarStat ( True, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
@@ -167,8 +218,19 @@ begin
 
   aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
   aCar.TiresMax := Brain.CarSetupPoints - 6;
-  if Brain.laps = 3 then
+  aCar.BrakesMax := Brain.CarSetupPoints - 6;
+  aCar.BodyMax := Brain.CarSetupPoints - 6;
+  aCar.GearMax := Brain.CarSetupPoints - 6;
+  aCar.EngineMax := Brain.CarSetupPoints - 6;
+  aCar.SuspensionMax := Brain.CarSetupPoints - 6;
+  if Brain.laps = 3 then begin
     aCar.TiresMax := 14;
+    aCar.BrakesMax := 7;
+    aCar.BodyMax := 7;
+    aCar.GearMax := 7;
+    aCar.EngineMax := 7;
+    aCar.SuspensionMax := 7;
+  end;
 
   ShowcarStat ( False, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
   ShowcarStat ( False, MyCarAccount, StatBrakes );
@@ -205,6 +267,47 @@ begin
 
   // le gomme sono solo settabili dai due btn come treno nuovo
 end;
+procedure TForm3.SE_GridBodyGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  aCar : TCar;
+begin
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Body + 1 <= aCar.BodyMax  then begin // riferimento ai points del setup
+          aCar.Body := aCar.Body + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+    else if CellX = 0 {Del}then begin
+      if aCar.Body > 1 then begin
+        aCar.Body := aCar.Body - 1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+      end;
+    end;
+    ShowcarStat ( True, MycarAccount, StatBody );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
+        if aCar.Body + 1 <= aCar.BodyMax  then begin // riferimento ai points del setup
+          aCar.Body := aCar.Body + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+  end;
+
+end;
+
 procedure TForm3.SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
 var
   aCar : TCar;
@@ -217,17 +320,20 @@ begin
       if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
         if aCar.Brakes + 1 <= aCar.BrakesMax  then begin // riferimento ai points del setup
           aCar.Brakes := aCar.Brakes + 1;
-          lblPoints.Tag:=lblPoints.Tag-1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
         end;
       end;
     end
     else if CellX = 0 {Del}then begin
       if aCar.Brakes > 1 then begin
         aCar.Brakes := aCar.Brakes - 1;
-        lblPoints.Tag:=lblPoints.Tag+1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
       end;
     end;
     ShowcarStat ( True, MycarAccount, StatBrakes );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
   end
   else if (Brain.Stage = StagePitStop) then begin
     // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
@@ -235,7 +341,130 @@ begin
       if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
         if aCar.Brakes + 1 <= aCar.BrakesMax  then begin // riferimento ai points del setup
           aCar.Brakes := aCar.Brakes + 1;
-          lblPoints.Tag:=lblPoints.Tag-1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+  end;
+
+end;
+
+procedure TForm3.SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  aCar : TCar;
+begin
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Engine + 1 <= aCar.EngineMax  then begin // riferimento ai points del setup
+          aCar.Engine := aCar.Engine + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+    else if CellX = 0 {Del}then begin
+      if aCar.Engine > 1 then begin
+        aCar.Engine := aCar.Engine - 1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+      end;
+    end;
+    ShowcarStat ( True, MycarAccount, StatEngine );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
+        if aCar.Engine + 1 <= aCar.EngineMax  then begin // riferimento ai points del setup
+          aCar.Engine := aCar.Engine + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+  end;
+
+end;
+
+procedure TForm3.SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
+var
+  aCar : TCar;
+begin
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Gear + 1 <= aCar.GearMax  then begin // riferimento ai points del setup
+          aCar.Gear := aCar.Gear + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+    else if CellX = 0 {Del}then begin
+      if aCar.Gear > 1 then begin
+        aCar.Gear := aCar.Gear - 1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+      end;
+    end;
+    ShowcarStat ( True, MycarAccount, StatGear );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
+        if aCar.Gear + 1 <= aCar.GearMax  then begin // riferimento ai points del setup
+          aCar.Gear := aCar.Gear + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+  end;
+
+end;
+
+procedure TForm3.SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+var
+  aCar : TCar;
+begin
+//  lblPoints.Tag --> Points
+  if (Brain.Stage = StageSetupQ) or (Brain.Stage = StageSetupRace) then begin
+    aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
+        if aCar.Suspension + 1 <= aCar.SuspensionMax  then begin // riferimento ai points del setup
+          aCar.Suspension := aCar.Suspension + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+        end;
+      end;
+    end
+    else if CellX = 0 {Del}then begin
+      if aCar.Suspension > 1 then begin
+        aCar.Suspension := aCar.Suspension - 1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
+      end;
+    end;
+    ShowcarStat ( True, MycarAccount, StatSuspension );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
+  end
+  else if (Brain.Stage = StagePitStop) then begin
+    // durante il pitstop ci sono 2 punti da assegnare e nulla da sottrarre
+    if CellX = 1 {Add} then begin
+      if lblPoints.Tag > 0 then begin                    // points è i 2 meccanici in race
+        if aCar.Suspension + 1 <= aCar.SuspensionMax  then begin // riferimento ai points del setup
+          aCar.Suspension := aCar.Suspension + 1;
+          lblPoints.Tag:=lblPoints.Tag-1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
         end;
       end;
     end
@@ -255,17 +484,20 @@ begin
       if lblPoints.Tag > 0 then begin                    // points è il setup 15,18,20
         if aCar.Tires + 1 <= aCar.TiresMax  then begin // riferimento ai points del setup
           aCar.Tires := aCar.Tires + 1;
-          lblPoints.Tag:=lblPoints.Tag-1;
+          lblPoints.Tag:=lblPoints.Tag-1;  lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
         end;
       end;
     end
     else if CellX = 0 {Del}then begin
       if aCar.Tires > 1 then begin
         aCar.Tires := aCar.Tires - 1;
-        lblPoints.Tag:=lblPoints.Tag+1;
+        lblPoints.Tag:=lblPoints.Tag+1; lblPoints.Caption := 'Points: ' + IntToStr(lblPoints.Tag);
       end;
     end;
     ShowcarStat ( True, MycarAccount, StatTires );
+    if lblPoints.Tag = 0 then
+      btnConfirmSetup.Enabled := True
+      else btnConfirmSetup.Enabled := False;
   end
   else if (Brain.Stage = StagePitStop) then begin
     // durante il pitstop non può modificare le tires, ma solo cambiare l'intero treno

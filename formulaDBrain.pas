@@ -27,7 +27,6 @@ const TrackWet = 1;
 type TCircuitDescr = record
   Name : string[25];
   Corners: string[255];
-  CarAngle: SmallInt;
 end;
 type TCell = Class
   public
@@ -73,8 +72,11 @@ type TCar = Class
   EngineMax: ShortInt;
   SuspensionMax: ShortInt;
 
-
   LastGear: ShortInt;
+
+  ConfirmedSetupQ : Boolean;
+  ConfirmedSetupR : Boolean;
+
   constructor Create;
   destructor Destroy;override;
 
