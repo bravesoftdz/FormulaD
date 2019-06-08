@@ -108,6 +108,8 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState;
       var Handled: Boolean);
+    procedure SE_EngineCarsSpriteDestinationReached(ASprite: SE_Sprite);
+    procedure ThreadCurMoveTimer(Sender: TObject);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -127,6 +129,8 @@ type
     { Public declarations }
     procedure ResetSetupWeather  ( aGridWeather: Se_grid);
     procedure InitializeCar ( aCar : Tcar );
+    procedure StartQualifications;
+    procedure StartRace;
   end;
 
   const EndofLine = 'ENDFD';
@@ -213,6 +217,7 @@ var
   i,r: Integer;
 begin
 // quando tutti sono connessi
+  Brain.Laps := StrToInt( cblaps.text );
   LoadCircuit ( cbCircuit.text ) ; // le car sono già caricate anche come sprite
 
   for r := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin     // cb punta alla gri. sono sempre per primi gli hp al contrario delle cpu
@@ -258,6 +263,7 @@ begin
   if Brain.lsTCars.Count = StrToInt( cbHumanPlayers.Text ) + StrToInt( cbCPU.Text ) then begin   // tutti connessi
 
    // LoadCircuit ( cbCircuit.text ) ; // le car sono già caricate anche come sprite
+    PanelCreateGame.Visible := False; //<-- solo per il server
 
     if Brain.Qualifications = QualLap then begin
       Brain.ServerIncMove := 0;
@@ -267,12 +273,9 @@ begin
       // random StartGrid
       Brain.CreateRndStartingGrid;
       Brain.ServerIncMove := 0;
-//      Brain.Stage := StageSetupRace;
-      Brain.Stage :=StageQualifications;
+      Brain.Stage := StageSetupRace; // prima qui poi alla gara
+//      Brain.Stage := StageRace;
 
-      PanelCreateGame.Visible := False;
-      SE_Theater1.Active := True;
-      SE_Theater1.Visible := True;
     end;
 
     Brain.CarSetupPoints :=  StrToInt(LeftStr( cbCarSetup.Text,2)); // setup car Points
@@ -284,6 +287,7 @@ begin
                                                    + AnsiChar (  tcpserver.Client[i].Account )
                                                    + GetbrainStream ( brain ) +  EndOfLine );
     end;
+    Brain.ServerIncMove := Brain.ServerIncMove + 1;
 
   end;
 end;
@@ -333,7 +337,6 @@ end;
 procedure TForm1.CarSpritesReset ( StartingGrid : Boolean );
 var
   i,StartAngle: Integer;
-  ini : TIniFile;
 begin
 
   for I := 0 to brain.lstCars.Count -1 do begin
@@ -754,6 +757,12 @@ begin
 
 end;
 
+procedure TForm1.SE_EngineCarsSpriteDestinationReached(ASprite: SE_Sprite);
+begin
+  // Quando una Car raggiunge la cella indicata nel path, riavvia il Thread dell'animazione
+  ThreadCurMove.Enabled := True;
+end;
+
 procedure TForm1.SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
 begin
   // qui c'è il PickCar
@@ -796,9 +805,10 @@ begin
 end;
 procedure TForm1.SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState; var Handled: Boolean);
 begin
-//  Handled := True;
-//  if lstsprite[0].Engine = SE_EngineCars then
-//    Cursor := crHandPoint;
+  SE_Theater1.ChangeCursor := True;
+  Handled := True;
+  if lstsprite[0].Engine = SE_EngineCars then
+    Cursor := crHandPoint;
 
 end;
 
@@ -806,10 +816,7 @@ procedure TForm1.tcpDataAvailable(Sender: TObject; ErrCode: Word);
 var
   LEN : Integer;
   Buf     : array [0..8191] of AnsiChar;
-  ini : Tinifile;
   tmpStr: string;
-  MMbraindata: TMemoryStream;
-  MMbraindataZIP: TMemoryStream;
   DeCompressedStream: TZDecompressionStream;
   MM,MM2 : TMemoryStream;
   label firstload;
@@ -855,20 +862,23 @@ begin
   //      CopyMemory( @Buf3, mm3.Memory , mm3.size  ); // copia del buf per non essere sovrascritti
         CopyMemory( @Buf3[LastTcpIncMove], mm3[LastTcpIncMove].Memory , mm3[LastTcpIncMove].size  ); // copia del buf per non essere sovrascritti
         MM3[LastTcpIncMove].SaveToFile( dir_tmp + IntToStr(LastTcpIncMove) + '.IS');
+
+          CurrentIncMove := LastTcpIncMove;
     firstload:
-          if not FirstLoadOK  then begin   // avvio partita o ricollegamento. se è la prima volta
-            CurrentIncMove := LastTcpIncMove;
+//          if not FirstLoadOK  then begin   // avvio partita o ricollegamento. se è la prima volta
             LoadBrain (CurrentIncMove, true) ;   // (incmove)
-            FirstLoadOK := True;
+//            FirstLoadOK := True;
 
-            CarSpritesReset ( False );
-            ThreadCurMove.Enabled := true;
+//            CarSpritesReset ( False );
+//            ThreadCurMove.Enabled := true;
 
-          end;
+//          end
+//          else begin
+//            LoadBrain (CurrentIncMove, true) ;   // (incmove)
 
+    end;
           MM.Free;
           Exit;
-    end;
 
 //    MemoC.Lines.Add( 'normal size: ' + IntToStr(Len) );
 
@@ -890,16 +900,18 @@ var
   aGuid,aBox,aTiresType,aTires,aBrakes,aGear,aBody,anEngine,aSuspension,aPathCount: Byte;
   aTiresMax,aBrakesMax,aGearMax,aBodyMax,anEngineMax,aSuspensionMax: Byte;
   aCell: TCell;
-  PathX,PathY:integer;
+  PathGuid:integer;
   aPoint : TPoint;
   aUserName: string;
   aCar : TCar;
+  inGame: Boolean;
 begin
 
-  if FirstTime then begin
+//  if FirstTime then begin
+  if Brain.lstCars.Count = 0 then begin
     se_EngineCars.RemoveAllSprites ;
     se_EngineCars.ProcessSprites(2000);
-    Brain.lstCars.Clear;
+  //  Brain.lstCars.Clear;
   end;
 
   SS := TStringStream.Create;
@@ -930,8 +942,7 @@ begin
   Brain.Stage :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
 
-
-  Brain.CurrentCar :=  Ord( buf3[incMove][ cur ]);
+  Brain.fCurrentCar :=  Ord( buf3[incMove][ cur ]);  // <-- non innesca la AI
   cur := cur + 1 ;
 
   Brain.Laps :=  Ord( buf3[incMove][ cur ]);
@@ -994,20 +1005,19 @@ begin
     Cur := Cur + 1 ;
     aSuspensionMax := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
+    inGame :=  Boolean( Ord( buf3[incMove][ cur ]));
+    Cur := Cur + 1 ;
 
     aPathCount := Ord( buf3[incMove][ cur ]);
     Cur := Cur + 1 ;
 
-    for p := 0 to aPathCount -1 do begin
-      PathX := PDWORD(@buf3[incMove][ cur ])^;
-      Cur := Cur + 4 ;
-      PathY := PDWORD(@buf3[incMove][ cur ])^;
-      Cur := Cur + 4 ;
-      aCar.Path.Add( Point(PathX,PathY) );
-    end;
 
 
-    if FirstTime then begin
+
+
+   // if FirstTime then begin
+    if Brain.lstCars.Count = 0 then begin
+
       aCar := TCar.Create;
       aCar.Guid := aGuid ;
       aCar.UserName := aUsername;
@@ -1021,6 +1031,7 @@ begin
 
       aCar := Brain.FindCar ( aGuid );
     end;
+
 
 //    aCar.lastGear
     aCar.TiresType := aTiresType;
@@ -1037,11 +1048,20 @@ begin
     aCar.EngineMax := anEngineMax;
     aCar.SuspensionMax := aSuspensionMax;
 
+    aCar.Path.Clear;
+    for p := 0 to aPathCount -1 do begin
+      PathGuid := PDWORD(@buf3[incMove][ cur ])^;
+      Cur := Cur + 4 ;
+      aCar.Path.Add( PathGuid );
+    end;
+    aCar.inGame := inGame;
+
     aCell := GetCell ( aCellGuid );
     aCar.Cell  := aCell;
 
 
-    if FirstTime then begin
+//    if FirstTime then begin
+    if SE_EngineCars.SpriteCount < Brain.lstCars.Count then begin
 
       aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
       aCar.SE_Sprite.Scale := 86;
@@ -1051,14 +1071,27 @@ begin
     end;
 
 
-    aCar.Se_Sprite.PositionX := aCar.Cell.PixelX;
-    aCar.Se_Sprite.PositionY := aCar.Cell.PixelY;
-    aCar.Se_Sprite.Angle := aCar.Cell.Angle;
-    aCar.Se_Sprite.MoverData.Destination := Point ( aCar.Cell.PixelX, aCar.Cell.PixelY );
-
-    if (Brain.Stage = StageQualifications) or (Brain.Stage = StageRace) then
+    if (Brain.Stage = StageQualifications) then begin
+      //<-- in quelification quand la car è la currentCar diventa visibile per sempre
+      if aCar.inGame then
+        aCar.SE_Sprite.Visible := True;
+    end
+    else if (Brain.Stage = StageRace) then
       aCar.SE_Sprite.Visible := True;
 //      CarSpritesReset ( True );
+
+    if aCar.Path.Count = 0 then begin
+      aCar.Se_Sprite.Position := Point( aCar.Cell.PixelX,aCar.Cell.PixelY);
+      aCar.Se_Sprite.Angle := aCar.Cell.Angle;
+      aCar.Se_Sprite.MoverData.Destination := Point ( aCar.Cell.PixelX, aCar.Cell.PixelY );
+    end
+    else begin // se c'è un path mostro il movimento
+      aCell := GetCell ( aCar.Path[0] );   //<-- l'elemento 0 è la vecchia cella di partenza
+      aCar.Se_Sprite.Position := Point( aCell.PixelX , aCell.PixelY );
+      aCar.Se_Sprite.Angle := aCell.Angle;
+      ThreadCurMove.Enabled := True;
+
+    end;
 
   end;
 
@@ -1080,11 +1113,21 @@ begin
       Form3.setupR;
     end
     else if (brain.Stage = StagePitStop) then
-      Form3.setupPitStop;
+      Form3.setupPitStop
+    else if (brain.Stage = StageRace) then begin
+      Form3.showGear ( MyCarAccount );
+    end;
 
 
     Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
   //  Exit;
+  end
+  else if (brain.Stage = StageQualifications)  or (brain.Stage = StageRace) then begin
+    SE_Theater1.Active := True;
+    SE_Theater1.Visible := True;
+    Form3.Show;
+    Form3.ShowGear ( MyCarAccount );
+
   end;
 
 // NOTE HERE
@@ -1218,7 +1261,7 @@ begin
   end;
 
   TotPoints := 0;
-  for I := 0 to ts.Count -1 do begin
+  for I := 1 to ts.Count -1 do begin  // parte da 1. 0 è  la carGuid
     TotPoints := TotPoints + StrToIntdef(ts[i],-1);
     if StrToIntDef(ts[i],-1) = -1 then begin // devono essere 7 numeri. tirestype + 6 stats
       result := False;
@@ -1227,7 +1270,7 @@ begin
     end;
   end;
 
-  if totPoints + 6 <> brain.CarSetupPoints then begin
+  if totPoints <> brain.CarSetupPoints then begin
       result := False;
       ts.Free;
       Exit;
@@ -1341,7 +1384,15 @@ begin
         aCar.ConfirmedSetupQ := true;
       end;
 
-    //  StartQualifications;
+      StartQualifications;
+      Brain.SaveData ( Brain.ServerIncMove ) ;
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
+          TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  )
+                                                     + AnsiChar (  tcpserver.Client[i].Account )
+                                                     + GetbrainStream ( brain ) +  EndOfLine );  //<-- stageQualifications e currentCar util nel client
+      end;
+      Brain.ServerIncMove := Brain.ServerIncMove + 1;
     end;
 
   end
@@ -1349,6 +1400,7 @@ begin
     if Brain.Stage <> StageSetupRace then Exit;
 
     if validate_and_WriteSetupCar ( Cli, ts.CommaText ) then begin
+      aCar := Brain.FindCar( cli.Account );
       aCar.ConfirmedSetupR := True;
       // se tutte le car sono validate le cpu si autosettano con dei preset
       for I := 0 to StrToInt( cbHumanPlayers.Text ) -1 do begin
@@ -1359,10 +1411,19 @@ begin
       for I := StrToInt( cbHumanPlayers.Text ) to SE_GridSetupPlayers.RowCount -1 do begin
         aCar := brain.lstCars[i];
         LoadCarRndPreset ( aCar );
-        aCar.ConfirmedSetupQ := true;
+        aCar.ConfirmedSetupR := true;
         brain.lstCars[i].ConfirmedSetupR := true;
       end;
-//      StartRace;
+
+      StartRace;
+      Brain.SaveData ( Brain.ServerIncMove ) ;
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
+          TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  )
+                                                     + AnsiChar (  tcpserver.Client[i].Account )
+                                                     + GetbrainStream ( brain ) +  EndOfLine );  //<-- stageQualifications e currentCar util nel client
+      end;
+      Brain.ServerIncMove := Brain.ServerIncMove + 1;
 
     end;
   end;
@@ -1377,6 +1438,25 @@ end;
 procedure TForm1.tcpSessionConnected(Sender: TObject; ErrCode: Word);
 begin
   TWSocketClient(Sender).SendStr( 'login,'+ TWSocket(Sender).Name + ',' + EdtPwd.text + EndOfLine);
+end;
+
+procedure TForm1.ThreadCurMoveTimer(Sender: TObject);
+var
+  i: Integer;
+  aCar: TCar;
+  aCell : TCell;
+begin
+  for I := 0 to brain.lstCars.Count -1 do begin
+    aCar := brain.lstCars[i];
+    if aCar.Path.Count > 0 then begin
+      aCell := Brain.FindCell( aCar.Path[i] );
+      aCar.SE_Sprite.MoverData.Destination := Point( aCell.PixelX, aCell.PixelY );
+      aCar.Path.Delete(0);  // <-- elaborato il path viene svuotato di volta in volta
+    end;
+  end;
+
+  ThreadCurMove.Enabled := False; //<-- viene riavviato in spritedestintionReached
+
 end;
 
 function TForm1.FindCarBmpPos ( Pos : Integer ): pTCarBmp;
@@ -1470,7 +1550,7 @@ begin
     mm.Read( aCell.Guid , SizeOf(SmallInt) );
     mm.Read( aCell.Lane , SizeOf(ShortInt) );
     mm.Read( aCell.Corner , SizeOf(Byte) );
-    mm.Read( aCell.Angle , SizeOf(SmallInt) );
+    mm.Read( aCell.Angle , SizeOf(Single) );
     mm.Read( aCell.StartingGrid , SizeOf(Byte) );
     mm.Read( aCell.Box , SizeOf(Byte) );
     mm.Read( aCell.FinishLine , SizeOf(Boolean) );
@@ -1495,9 +1575,10 @@ begin
 
   aSprite := SE_Sprite.Create (dir_circuits + CircuitName +'.bmp','circuit',1,1,1000,0,0,false );
 
-  for i := 0 to SE_Theater1.EngineCount -1 do begin
-    SE_Theater1.Engines [i].RemoveAllSprites;
-  end;
+  SE_EngineBack.RemoveAllSprites;
+ // for i := 0 to SE_Theater1.EngineCount -1 do begin
+ //   SE_Theater1.Engines [i].RemoveAllSprites;
+ // end;
 
   SE_Theater1.VirtualWidth := aSprite.BMP.Width;
   SE_Theater1.VirtualHeight := aSprite.BMP.Height;
@@ -1527,5 +1608,48 @@ begin
   Result := SS.DataString;
   SS.Free;
 end;
+procedure TForm1.StartQualifications;
+var
+  i: Integer;
+  aCell: TCell;
+begin
+  // Utilizzo una lista false per i sort. la lista brain.lstCars non verrà ordinata per mantenere la struttura del tutto
+  Brain.Stage := StageQualifications;
+  Brain.lstCarsTmp.Clear;
+  for I := 0 to brain.lstCars.count -1 do begin
+    Brain.lstCarsTmp.Add( Brain.lstCars[i]  );
+  end;
 
+  for I := ((brain.lstCarsTmp.count -1) * 2 ) downto 0 do begin
+    brain.lstCarsTmp.Exchange( Brain.RndGenerate0( brain.lstCarsTmp.count -1 ), Brain.RndGenerate0( brain.lstCarsTmp.count -1 ) );
+  end;
+
+  Brain.CurrentCar := Brain.lstCarsTmp[0].Guid;
+  Brain.lstCarsTmp[0].inGame := True;  //<-- modifica anche l'oggetto in lstcars
+  aCell := Brain.FindCellStartingGrid(1);
+  Brain.lstCarsTmp[0].Cell := aCell;
+end;
+procedure TForm1.StartRace;
+var
+  i: Integer;
+  aCell: TCell;
+begin
+  // Utilizzo una lista false per i sort. la lista brain.lstCars non verrà ordinata per mantenere la struttura del tutto
+
+  // in caso di qualRnd le car sono già piazzate nelle celle startingGrid
+  // Nel caso dell qulifiche reali è da fare. FORZO un RND
+  Brain.Stage := StageRace;
+  //Brain.lstCarsTmp.Clear;
+ // for I := 0 to brain.lstCars.count -1 do begin
+ //   Brain.lstCarsTmp.Add( Brain.lstCars[i]  );
+ // end;
+
+//  Brain.lstCarsTmp.Sort
+
+
+ // Brain.CurrentCar := Brain.lstCarsTmp[0].Guid;
+ // Brain.lstCarsTmp[0].inGame := True;  //<-- modifica anche l'oggetto in lstcars
+ // aCell := Brain.FindCellStartingGrid(1);
+ // Brain.lstCarsTmp[0].Cell := aCell;
+end;
 end.

@@ -37,7 +37,7 @@ type TCell = Class
   Corner : Byte;
   StartingGrid : Byte;
   Box : Byte;
-  Angle: SmallInt;
+  Angle: Single;
   FinishLine : Boolean;
   PixelX,PixelY : SmallInt;
   DistCorner : Byte;
@@ -55,7 +55,7 @@ type TCar = Class
   Cell :TCell;
   Box : Byte;
   SE_Sprite : SE_Sprite;
-  Path : TList<TPoint>;
+  Path : SE_IntegerList;
 
   TiresType : Byte;
   Tires : ShortInt;
@@ -76,7 +76,7 @@ type TCar = Class
 
   ConfirmedSetupQ : Boolean;
   ConfirmedSetupR : Boolean;
-
+  inGame: Boolean;
   constructor Create;
   destructor Destroy;override;
 
@@ -96,18 +96,23 @@ type TFormulaDBrain = class
     Weather : Byte;
     Track : Byte; // 0 dry 1 wet
     Stage: Byte;
-    CurrentCar: Byte;
+    fCurrentCar: Byte;
 
     Laps: Byte;
 
     lstCars: TObjectList<TCar>;
+    lstCarsTmp: TObjectList<TCar>;
+    lstCarsStartingGrid: TObjectList<TCar>;
+    lstCarsPositions: TObjectList<TCar>;
     Circuit : TObjectList<TCell>;
     CircuitDescr: TCircuitDescr;
+    procedure SetCurrentCar ( aValue: Byte );
   constructor Create;
   destructor Destroy;override;
   procedure CreateRndStartingGrid;
     function FindStartingGrid ( Position : Byte ): TCell;
     function FindCell ( Guid : SmallInt ): TCell;
+    function FindCellStartingGrid ( Position : Byte ): TCell;
 
   function FindCar ( Guid : Integer ): TCar;
   procedure SaveData ( CurMove: Integer ) ;
@@ -115,11 +120,13 @@ type TFormulaDBrain = class
   function RndGenerate( Upper: integer ): integer;
   function RndGenerate0( Upper: integer ): integer;
   function RndGenerateRange( Lower, Upper: integer ): integer;
+
+  property CurrentCar : byte read fCurrentCar write SetCurrentCar;
 end;
 implementation
 constructor TCar.Create;
 begin
-  Path := TList<TPoint>.Create;
+  Path := SE_IntegerList.Create;
 end;
 destructor TCar.Destroy;
 begin
@@ -141,6 +148,10 @@ constructor TFormulaDBrain.Create;
 begin
   Circuit := TObjectList<TCell>.Create (True);
   lstCars:= TObjectList<TCar>.Create(true);
+  lstCarsTmp:= TObjectList<TCar>.Create(false);
+  lstCarsStartingGrid:= TObjectList<TCar>.Create(False);
+  lstCarsPositions:= TObjectList<TCar>.Create(False);
+
   RandGen := TtdCombinedPRNG.Create(0, 0);
   MMbraindata:= TMemoryStream.Create;
   MMbraindataZIP:= TMemoryStream.Create ;
@@ -149,10 +160,24 @@ end;
 destructor TFormulaDBrain.Destroy;
 begin
   Circuit.Free;
+  lstCarsTmp.Free;
+  lstCarsStartingGrid.Free;
+  lstCarsPositions.Free;
   lstCars.Free;
   RandGen.Free;
   MMbraindata.Free;
   MMbraindataZIP.Free;
+
+end;
+procedure TFormulaDBrain.SetCurrentCar( aValue : Byte );
+var
+  aCar : TCar;
+begin
+  fCurrentCar := aValue;
+  aCar := FindCar( fCurrentCar );
+  if aCar.AI then begin
+//    AI_Think;
+  end;
 
 end;
 function TFormulaDBrain.RndGenerate( Upper: integer ): integer;
@@ -225,6 +250,20 @@ begin
     end;
   end;
 end;
+function TFormulaDBrain.FindCellStartingGrid ( Position : Byte ): TCell;
+var
+  i: integer;
+begin
+  for I := 0 to Circuit.Count -1 do begin
+    if Circuit[i].StartingGrid = Position then begin
+      Result := Circuit[i];
+      Exit;
+    end;
+
+  end;
+
+end;
+
 procedure TFormulaDBrain.SaveData ( CurMove: Integer ) ;
 var
   ISMARK : array [0..1] of ansichar;
@@ -232,7 +271,7 @@ var
   totCars,CarGuid, totPath: Byte;
   tmp: string;
   tmpStream, MM : TMemoryStream;
-  PathX, PathY : Integer;
+  PathGuid : Integer;
   str : AnsiString;
   CompressedStream: TZCompressionStream;
   DeCompressedStream: TZDeCompressionStream;
@@ -258,7 +297,7 @@ begin
   MMbraindata.Write( @Weather, SizeOf(Byte) );
   MMbraindata.Write( @Track, SizeOf(Byte) );
   MMbraindata.Write( @Stage, SizeOf(Byte) );
-  MMbraindata.Write( @CurrentCar, SizeOf(Byte) );
+  MMbraindata.Write( @fCurrentCar, SizeOf(Byte) );
 
   MMbraindata.Write( @Laps, SizeOf(Byte) );
 
@@ -290,13 +329,13 @@ begin
     MMbraindata.Write( @lstCars[i].EngineMax, sizeof(ShortInt) );
     MMbraindata.Write( @lstCars[i].SuspensionMax, sizeof(ShortInt) );
 
+    MMbraindata.Write( @lstCars[i].InGame, sizeof(Boolean) );
+
     totPath := lstCars[i].Path.Count;
     MMbraindata.Write( @totPath, sizeof(Byte) );
     for p := 0 to totPath -1 do begin
-      PathX := lstCars[i].Path[p].X;
-      PathY := lstCars[i].Path[p].X;
-      MMbraindata.Write( @PathX, sizeof(Integer) );
-      MMbraindata.Write( @PathY, sizeof(Integer) );
+      PathGuid := lstCars[i].Path[p];
+      MMbraindata.Write( @PathGuid, sizeof(Integer) );
     end;
 
   end;

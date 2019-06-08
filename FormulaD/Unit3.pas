@@ -25,21 +25,16 @@ type
     Button3: TButton;
     btnConfirmSetup: TCnSpeedButton;
     lblTiresType: TLabel;
+    SE_GridCurrentGear: SE_Grid;
     procedure FormCreate(Sender: TObject);
-    procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
+    procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
     procedure btnTiresWetClick(Sender: TObject);
-    procedure SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridBodyGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
-    procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;
-      Sprite: SE_Sprite);
+    procedure SE_GridBrakesGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
+    procedure SE_GridBodyGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
+    procedure SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
+    procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
+    procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure btnConfirmSetupClick(Sender: TObject);
   private
     { Private declarations }
@@ -48,6 +43,7 @@ type
     procedure SetupQ;
     procedure SetupPitStop;
     procedure SetupR;
+    procedure ShowGear (CarAccount : Byte);
 
 
     procedure ShowCarStat ( Editing : boolean; CarAccount : Byte; Stat : TStat );
@@ -72,11 +68,11 @@ begin
 
   aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
   Form1.tcp.SendStr( 'S' + prefix + ',' + IntTostr(aCar.TiresType) + ','
-                     + IntTostr(aCar.TiresMax)+ ','
-                     + IntTostr(aCar.BrakesMax) + ','
-                     + IntTostr(aCar.GearMax)+ ','
-                     + IntTostr(aCar.BodyMax)+ ','
-                     + IntTostr(aCar.EngineMax)+ ','
+                     + IntTostr(aCar.Tires)+ ','
+                     + IntTostr(aCar.Brakes) + ','
+                     + IntTostr(aCar.Gear)+ ','
+                     + IntTostr(aCar.Body)+ ','
+                     + IntTostr(aCar.Engine)+ ','
                      + IntTostr(aCar.Suspension)
                      + EndofLine );
 end;
@@ -207,37 +203,11 @@ begin
   ShowcarStat ( True, MyCarAccount, StatSuspension );
 
 end;
-procedure TForm3.SetupR; // abilita lista cars , btn gear 1-6
+procedure TForm3.SetupR;
 var
   aCar : TCar;
 begin
-  // Nessun pulsate per edting è visibile
-  btnTiresDry.Visible := false;
-  btnTiresWet.Visible := false;
-
-  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  aCar.TiresMax := Brain.CarSetupPoints - 6;
-  aCar.BrakesMax := Brain.CarSetupPoints - 6;
-  aCar.BodyMax := Brain.CarSetupPoints - 6;
-  aCar.GearMax := Brain.CarSetupPoints - 6;
-  aCar.EngineMax := Brain.CarSetupPoints - 6;
-  aCar.SuspensionMax := Brain.CarSetupPoints - 6;
-  if Brain.laps = 3 then begin
-    aCar.TiresMax := 14;
-    aCar.BrakesMax := 7;
-    aCar.BodyMax := 7;
-    aCar.GearMax := 7;
-    aCar.EngineMax := 7;
-    aCar.SuspensionMax := 7;
-  end;
-
-  ShowcarStat ( False, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
-  ShowcarStat ( False, MyCarAccount, StatBrakes );
-  ShowcarStat ( False, MyCarAccount, StatGear );
-  ShowcarStat ( False, MyCarAccount, StatBody );
-  ShowcarStat ( False, MyCarAccount, StatEngine );
-  ShowcarStat ( False, MyCarAccount, StatSuspension );
-
+  SetupQ; // uguale alla setupQ
 end;
 procedure TForm3.SetupPitStop;  // abilita img mechanic points, btn scelta gomme, continue, leave box
 var
@@ -608,4 +578,74 @@ begin
   Grid.CellsEngine.ProcessSprites(20);
   Grid.RefreshSurface ( Grid );
 end;
+procedure TForm3.ShowGear;
+var
+  bmp : SE_bitmap;
+  i,r,h: Integer;
+  aCar: TCar;
+begin
+  // Nessun pulsate per edting è visibile
+  btnTiresDry.enabled := false;
+  btnTiresWet.enabled := false;
+
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+
+  ShowcarStat ( False, MyCarAccount, StatTires ); // --> True = editing possibile con pulsanti aggiuntivi
+  ShowcarStat ( False, MyCarAccount, StatBrakes );
+  ShowcarStat ( False, MyCarAccount, StatGear );
+  ShowcarStat ( False, MyCarAccount, StatBody );
+  ShowcarStat ( False, MyCarAccount, StatEngine );
+  ShowcarStat ( False, MyCarAccount, StatSuspension );
+
+
+  h:= 24;
+  SE_GridCurrentGear.ClearData;   // importante anche pr memoryleak
+  SE_GridCurrentGear.DefaultColWidth := 48;
+  SE_GridCurrentGear.DefaultRowHeight := h;
+
+  SE_GridCurrentGear.ColCount := 4;
+  SE_GridCurrentGear.RowCount := 6;
+
+  for I := 0 to SE_GridCurrentGear.ColCount -1 do begin
+    for r := 0 to SE_GridCurrentGear.rowCount -1 do begin
+      SE_GridCurrentGear.cells [i,r].BackColor:=  $007B5139;
+      SE_GridCurrentGear.Cells[i,r].FontColor := clWhite;
+    end;
+  end;
+
+  for I := 0 to SE_GridCurrentGear.RowCount -1 do begin
+    SE_GridCurrentGear.Rows[i].Height := h;
+  end;
+  SE_GridCurrentGear.Height := h*7;
+  SE_GridCurrentGear.Width := (48 * SE_GridCurrentGear.ColCount) +18; // 18 indicatore gear
+
+  for I := 0 to SE_GridCurrentGear.ColCount -1 do begin
+      if i = 0 then
+        SE_GridCurrentGear.Columns[i].Width := 18
+      else SE_GridCurrentGear.Columns[i].Width := 48;
+
+      SE_GridCurrentGear.Cells [0,i].Text := IntToStr(i+1 );
+  end;
+  SE_GridCurrentGear.Cells [1,0].Text := '1-2';
+  SE_GridCurrentGear.Cells [1,1].Text := '2-4';
+  SE_GridCurrentGear.Cells [1,2].Text := '2-4';
+  SE_GridCurrentGear.Cells [1,3].Text := '2-4';
+  SE_GridCurrentGear.Cells [1,4].Text := '2-4';
+  SE_GridCurrentGear.Cells [1,5].Text := '2-4';
+
+  SE_GridCurrentGear.Cells [2,3].Text := '2-4';
+  SE_GridCurrentGear.Cells [3,3].Text := '2-4';
+  SE_GridCurrentGear.Cells [2,4].Text := '2-4';
+  SE_GridCurrentGear.Cells [3,4].Text := '2-4';
+
+
+  for r := 0 to SE_GridCurrentGear.RowCount -1 do begin
+    SE_GridCurrentGear.Cells [0,i].Text := IntToStr(i+1 );
+  end;
+
+
+  SE_GridCurrentGear.CellsEngine.ProcessSprites(20);
+  SE_GridCurrentGear.RefreshSurface ( SE_GridCurrentGear );
+end;
+
 end.

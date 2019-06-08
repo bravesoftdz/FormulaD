@@ -119,7 +119,7 @@ begin
     mm.Write( @Circuit[i].Guid , SizeOf(SmallInt));
     mm.Write( @Circuit[i].Lane , SizeOf(ShortInt));
     mm.Write( @Circuit[i].Corner , SizeOf(Byte));
-    mm.Write( @Circuit[i].Angle , SizeOf(SmallInt));
+    mm.Write( @Circuit[i].Angle , SizeOf(Single));
     mm.Write( @Circuit[i].StartingGrid , SizeOf(Byte));
     mm.Write( @Circuit[i].Box , SizeOf(Byte));
     mm.Write( @Circuit[i].FinishLine , SizeOf(Boolean));
@@ -174,7 +174,7 @@ begin
     mm.Read( aCell.Guid , SizeOf(SmallInt) );
     mm.Read( aCell.Lane , SizeOf(ShortInt) );
     mm.Read( aCell.Corner , SizeOf(Byte) );
-    mm.Read( aCell.Angle , SizeOf(SmallInt) );
+    mm.Read( aCell.Angle , SizeOf(Single) );
     mm.Read( aCell.StartingGrid , SizeOf(Byte) );
     mm.Read( aCell.Box , SizeOf(Byte) );
     mm.Read( aCell.FinishLine , SizeOf(Boolean) );
@@ -945,7 +945,7 @@ begin
       aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
       aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
-      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(Circuit[i].Angle ));
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, FloatToStr(Circuit[i].Angle ));
 
   end;
 

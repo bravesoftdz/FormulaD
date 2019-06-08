@@ -737,6 +737,7 @@ object Form1: TForm1
     IsoPriority = False
     Priority = 1
     Theater = SE_Theater1
+    OnSpriteDestinationReached = SE_EngineCarsSpriteDestinationReached
     Left = 520
     Top = 736
   end
@@ -750,8 +751,8 @@ object Form1: TForm1
     Top = 736
   end
   object ThreadCurMove: SE_ThreadTimer
-    Interval = 300
-    KeepAlive = True
+    Interval = 20
+    OnTimer = ThreadCurMoveTimer
     Left = 256
     Top = 746
   end
