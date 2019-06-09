@@ -36,6 +36,7 @@ type
     procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure btnConfirmSetupClick(Sender: TObject);
+    procedure SE_GridCurrentGearGridCellMouseMove(Sender: TObject; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
   private
     { Private declarations }
   public
@@ -316,6 +317,15 @@ begin
     end
   end;
 
+end;
+
+procedure TForm3.SE_GridCurrentGearGridCellMouseMove(Sender: TObject; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+begin
+  case CellY of
+  0: begin
+//    brain.calculateAllChance ( aCar, Gear ) MyCar,1
+  end;
+  end;
 end;
 
 procedure TForm3.SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
@@ -627,16 +637,16 @@ begin
       SE_GridCurrentGear.Cells [0,i].Text := IntToStr(i+1 );
   end;
   SE_GridCurrentGear.Cells [1,0].Text := '1-2';
-  SE_GridCurrentGear.Cells [1,1].Text := '2-4';
-  SE_GridCurrentGear.Cells [1,2].Text := '2-4';
-  SE_GridCurrentGear.Cells [1,3].Text := '2-4';
-  SE_GridCurrentGear.Cells [1,4].Text := '2-4';
-  SE_GridCurrentGear.Cells [1,5].Text := '2-4';
+  SE_GridCurrentGear.Cells [1,1].Text := '3-4';
+  SE_GridCurrentGear.Cells [1,2].Text := '4-8';
+  SE_GridCurrentGear.Cells [1,3].Text := '7-12';
+  SE_GridCurrentGear.Cells [1,4].Text := '11-20';
+  SE_GridCurrentGear.Cells [1,5].Text := '21-30';   // 29,30 --> engine sempre
 
-  SE_GridCurrentGear.Cells [2,3].Text := '2-4';
-  SE_GridCurrentGear.Cells [3,3].Text := '2-4';
-  SE_GridCurrentGear.Cells [2,4].Text := '2-4';
-  SE_GridCurrentGear.Cells [3,4].Text := '2-4';
+  SE_GridCurrentGear.Cells [2,3].Text := '7-9';     // 7 --> engine se scala gear
+  SE_GridCurrentGear.Cells [3,3].Text := '10-12';   // 12 --> engine se tira
+  SE_GridCurrentGear.Cells [2,4].Text := '11-15';   // 11 --> engine se scala gear
+  SE_GridCurrentGear.Cells [3,4].Text := '16-20';   // 20 --> engine se tira
 
 
   for r := 0 to SE_GridCurrentGear.RowCount -1 do begin

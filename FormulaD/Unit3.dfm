@@ -592,7 +592,7 @@ object Form3: TForm3
     Virtualheight = 212
     Passive = True
     TabOrder = 9
-    OnGridCellMouseDown = SE_GridTiresGridCellMouseDown
+    OnGridCellMouseMove = SE_GridCurrentGearGridCellMouseMove
     CellBorder = CellBorderNone
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
