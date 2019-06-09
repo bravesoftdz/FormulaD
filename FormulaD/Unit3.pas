@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls, DSE_Panel;
 Type TStat = ( statTires, StatBrakes, StatGear, StatBody, StatEngine, StatSuspension );
 type
   TForm3 = class(TForm)
@@ -25,7 +25,14 @@ type
     Button3: TButton;
     btnConfirmSetup: TCnSpeedButton;
     lblTiresType: TLabel;
-    SE_GridCurrentGear: SE_Grid;
+    SE_PanelGear: SE_Panel;
+    CnSpeedButton1: TCnSpeedButton;
+    CnSpeedButton2: TCnSpeedButton;
+    CnSpeedButton3: TCnSpeedButton;
+    CnSpeedButton4: TCnSpeedButton;
+    CnSpeedButton5: TCnSpeedButton;
+    CnSpeedButton6: TCnSpeedButton;
+    CnSpeedButton7: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
@@ -36,7 +43,7 @@ type
     procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure btnConfirmSetupClick(Sender: TObject);
-    procedure SE_GridCurrentGearGridCellMouseMove(Sender: TObject; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
+    procedure CnSpeedButton1MouseEnter(Sender: TObject);
   private
     { Private declarations }
   public
@@ -116,6 +123,12 @@ begin
 
   end;
 
+
+end;
+
+procedure TForm3.CnSpeedButton1MouseEnter(Sender: TObject);
+begin
+  //brain.calculateAllChance ( aCar, Gear ) MyCar,1  O .TAG
 
 end;
 
@@ -317,15 +330,6 @@ begin
     end
   end;
 
-end;
-
-procedure TForm3.SE_GridCurrentGearGridCellMouseMove(Sender: TObject; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
-begin
-  case CellY of
-  0: begin
-//    brain.calculateAllChance ( aCar, Gear ) MyCar,1
-  end;
-  end;
 end;
 
 procedure TForm3.SE_GridEngineGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
@@ -547,25 +551,30 @@ begin
   Grid.RowCount := 1;
 
   for I := 0 to Grid.ColCount -1 do begin
-    Grid.Cells[i,0].BackColor:=  $007B5139;
-    if i > 1 then
-      Grid.Columns[i].Width := w
-      else Grid.Columns[i].Width := 20;
-
+    Grid.Cells[i,0].BackColor:= $00D3FBCE; //$007B5139;
+    if Editing then begin
+      if i > 1 then
+        Grid.Columns[i].Width := w
+        else Grid.Columns[i].Width := 20;
+    end
+    else begin
+        Grid.Columns[i].Width := w;
+    end;
   end;
 
   Grid.Rows[0].Height := h;
   Grid.Height := h;
 
-  Grid.Width := (w * (Grid.ColCount -2) ) + 40 ;  //<-- 20+20 di plus e minus
-
   if Editing then begin
+    Grid.Width := (w * (Grid.ColCount -2) ) + 40;   //<-- 20+20 di plus e minus
     Grid.AddSE_Bitmap ( 0, 0, 1 , bmpMinus , true );
     Grid.AddSE_Bitmap ( 1, 0, 1 , bmpPlus , true );
-  end;
-
-  if Editing then StartCol := 2 else
+    StartCol := 2;
+  end
+  else begin
+    Grid.Width := w * Grid.ColCount  ;
     StartCol := 0;
+  end;
 
   if Stat = StatTires then begin
     for I := StartCol to Grid.ColCount -1 do begin
@@ -607,55 +616,7 @@ begin
   ShowcarStat ( False, MyCarAccount, StatEngine );
   ShowcarStat ( False, MyCarAccount, StatSuspension );
 
-
-  h:= 24;
-  SE_GridCurrentGear.ClearData;   // importante anche pr memoryleak
-  SE_GridCurrentGear.DefaultColWidth := 48;
-  SE_GridCurrentGear.DefaultRowHeight := h;
-
-  SE_GridCurrentGear.ColCount := 4;
-  SE_GridCurrentGear.RowCount := 6;
-
-  for I := 0 to SE_GridCurrentGear.ColCount -1 do begin
-    for r := 0 to SE_GridCurrentGear.rowCount -1 do begin
-      SE_GridCurrentGear.cells [i,r].BackColor:=  $007B5139;
-      SE_GridCurrentGear.Cells[i,r].FontColor := clWhite;
-    end;
-  end;
-
-  for I := 0 to SE_GridCurrentGear.RowCount -1 do begin
-    SE_GridCurrentGear.Rows[i].Height := h;
-  end;
-  SE_GridCurrentGear.Height := h*7;
-  SE_GridCurrentGear.Width := (48 * SE_GridCurrentGear.ColCount) +18; // 18 indicatore gear
-
-  for I := 0 to SE_GridCurrentGear.ColCount -1 do begin
-      if i = 0 then
-        SE_GridCurrentGear.Columns[i].Width := 18
-      else SE_GridCurrentGear.Columns[i].Width := 48;
-
-      SE_GridCurrentGear.Cells [0,i].Text := IntToStr(i+1 );
-  end;
-  SE_GridCurrentGear.Cells [1,0].Text := '1-2';
-  SE_GridCurrentGear.Cells [1,1].Text := '3-4';
-  SE_GridCurrentGear.Cells [1,2].Text := '4-8';
-  SE_GridCurrentGear.Cells [1,3].Text := '7-12';
-  SE_GridCurrentGear.Cells [1,4].Text := '11-20';
-  SE_GridCurrentGear.Cells [1,5].Text := '21-30';   // 29,30 --> engine sempre
-
-  SE_GridCurrentGear.Cells [2,3].Text := '7-9';     // 7 --> engine se scala gear
-  SE_GridCurrentGear.Cells [3,3].Text := '10-12';   // 12 --> engine se tira
-  SE_GridCurrentGear.Cells [2,4].Text := '11-15';   // 11 --> engine se scala gear
-  SE_GridCurrentGear.Cells [3,4].Text := '16-20';   // 20 --> engine se tira
-
-
-  for r := 0 to SE_GridCurrentGear.RowCount -1 do begin
-    SE_GridCurrentGear.Cells [0,i].Text := IntToStr(i+1 );
-  end;
-
-
-  SE_GridCurrentGear.CellsEngine.ProcessSprites(20);
-  SE_GridCurrentGear.RefreshSurface ( SE_GridCurrentGear );
+  SE_PanelGear.Visible := True;
 end;
 
 end.

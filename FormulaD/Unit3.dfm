@@ -5,7 +5,7 @@ object Form3: TForm3
   BorderStyle = bsSingle
   ClientHeight = 275
   ClientWidth = 510
-  Color = 8081721
+  Color = 13892558
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -191,6 +191,7 @@ object Form3: TForm3
       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000}
     Stretch = True
+    Transparent = True
   end
   object btnTiresDry: TCnSpeedButton
     Left = 72
@@ -228,7 +229,7 @@ object Form3: TForm3
     AutoSize = False
     Caption = 'Weather:'
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clYellow
+    Font.Color = clGray
     Font.Height = -13
     Font.Name = 'Tahoma'
     Font.Style = []
@@ -242,7 +243,7 @@ object Form3: TForm3
     AutoSize = False
     Caption = 'Track:'
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clYellow
+    Font.Color = clGray
     Font.Height = -13
     Font.Name = 'Tahoma'
     Font.Style = []
@@ -256,7 +257,7 @@ object Form3: TForm3
     AutoSize = False
     Caption = 'Points:'
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clYellow
+    Font.Color = clGray
     Font.Height = -13
     Font.Name = 'Tahoma'
     Font.Style = []
@@ -291,14 +292,13 @@ object Form3: TForm3
     AutoSize = False
     Caption = 'Tires:'
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clYellow
+    Font.Color = clGray
     Font.Height = -13
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
   end
   object SE_GridWeather: SE_Grid
-    Tag = 3
     Left = 213
     Top = 8
     Width = 256
@@ -309,7 +309,7 @@ object Form3: TForm3
     MouseWheelZoom = False
     MousePan = False
     MouseScroll = False
-    BackColor = clBlack
+    BackColor = 13892558
     AnimationInterval = 20
     GridInfoCell = False
     GridVisible = False
@@ -564,40 +564,110 @@ object Form3: TForm3
     Caption = 'leave box'
     TabOrder = 8
   end
-  object SE_GridCurrentGear: SE_Grid
-    Left = 308
+  object SE_PanelGear: SE_Panel
+    Left = 284
     Top = 68
-    Width = 161
-    Height = 133
-    Cursor = crHandPoint
-    MouseScrollRate = 1.000000000000000000
-    MouseWheelInvert = False
-    MouseWheelValue = 10
-    MouseWheelZoom = False
-    MousePan = False
-    MouseScroll = False
-    BackColor = clBlack
-    AnimationInterval = 20
-    GridInfoCell = False
-    GridVisible = False
-    GridColor = clSilver
-    GridCellWidth = 40
-    GridCellHeight = 30
-    GridCellsX = 10
-    GridCellsY = 4
-    GridHexSmallWidth = 10
-    CollisionDelay = 0
-    ShowPerformance = False
-    VirtualWidth = 212
-    Virtualheight = 212
-    Passive = True
+    Width = 205
+    Height = 149
     TabOrder = 9
-    OnGridCellMouseMove = SE_GridCurrentGearGridCellMouseMove
-    CellBorder = CellBorderNone
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Style = []
+    object CnSpeedButton1: TCnSpeedButton
+      Left = 49
+      Top = 9
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '1'
+      Margin = 4
+      OnMouseEnter = CnSpeedButton1MouseEnter
+    end
+    object CnSpeedButton2: TCnSpeedButton
+      Left = 49
+      Top = 30
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '2'
+      Margin = 4
+    end
+    object CnSpeedButton3: TCnSpeedButton
+      Left = 49
+      Top = 54
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '3'
+      Margin = 4
+    end
+    object CnSpeedButton4: TCnSpeedButton
+      Left = 49
+      Top = 78
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '4'
+      Margin = 4
+    end
+    object CnSpeedButton5: TCnSpeedButton
+      Left = 49
+      Top = 102
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '5'
+      Margin = 4
+    end
+    object CnSpeedButton6: TCnSpeedButton
+      Left = 49
+      Top = 125
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '6'
+      Margin = 4
+    end
+    object CnSpeedButton7: TCnSpeedButton
+      Left = 113
+      Top = 78
+      Width = 24
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      GroupIndex = 1
+      Caption = '4'
+      Margin = 4
+    end
   end
 end

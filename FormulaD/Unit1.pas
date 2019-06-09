@@ -40,8 +40,6 @@ type
     lblCircuit: TLabel;
     lblLap: TLabel;
     cbLaps: TComboBox;
-    lblWeather: TLabel;
-    SE_GridWeather: SE_Grid;
     lblHumanPlayers: TLabel;
     cbHumanPlayers: TComboBox;
     SE_SearchFiles1: SE_SearchFiles;
@@ -86,8 +84,6 @@ type
     procedure cbHumanPlayersCloseUp(Sender: TObject);
     procedure cbCPUCloseUp(Sender: TObject);
     procedure cbLapsCloseUp(Sender: TObject);
-
-    procedure SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure SE_GridQualGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure SE_GridSetupPlayersGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
@@ -113,7 +109,7 @@ type
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
-    procedure SelectSetupWeather (aGridWeather: Se_grid; Col : Integer );
+    procedure SetWeather (aGridWeather: Se_grid; Col : Integer );
     procedure ResetSetupQual;
     procedure SelectSetupQual ( Col : Integer );
     procedure ResetCarColor;
@@ -201,7 +197,6 @@ procedure TForm1.btnCreateGameClick(Sender: TObject);
 begin
   PanelCreateGame.Visible := True;
   PanelMain.Visible := False;
-  SelectSetupWeather ( SE_GridWeather, 4);
   SelectSetupQual (1);
   RefreshPlayerCPU;
 end;
@@ -264,6 +259,13 @@ begin
 
    // LoadCircuit ( cbCircuit.text ) ; // le car sono già caricate anche come sprite
     PanelCreateGame.Visible := False; //<-- solo per il server
+    Brain.Weather := Brain.rndGenerate0 ( 3 );
+    case Brain.Weather of
+      0: Brain.Track :=0;
+      1: Brain.Track :=0;
+      2: Brain.Track :=0;
+      3: Brain.Track :=1;
+    end;
 
     if Brain.Qualifications = QualLap then begin
       Brain.ServerIncMove := 0;
@@ -483,11 +485,11 @@ begin
 
   for I := 0 to TotRow -1 do begin
     SE_GridSetupPlayers.Rows[i].Height := 24;
-    SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;
+    SE_GridSetupPlayers.Cells[1,i].FontColor := clGray;
     SE_GridSetupPlayers.Cells[1,i].Guid := 0;
 
     if i < StrtoInt ( cbHumanPlayers.text ) then begin
-      SE_GridSetupPlayers.Cells[1,i].FontColor := clYellow;
+      SE_GridSetupPlayers.Cells[1,i].FontColor := clBlack;
       SE_GridSetupPlayers.Cells[1,i].Text  := 'Waiting for Tcp connection'
     end
       else SE_GridSetupPlayers.Cells[1,i].Text  := 'CPU' + IntToStr(I+1);
@@ -632,81 +634,54 @@ begin
   aGridWeather.ClearData;   // importante anche pr memoryleak
   aGridWeather.DefaultColWidth := 51;
   aGridWeather.DefaultRowHeight := 24;
-  if aGridWeather.Tag = 3 then
-    aGridWeather.ColCount := 4
-    else aGridWeather.ColCount := 5;
+  aGridWeather.ColCount := 4;
   aGridWeather.RowCount := 1;
   aGridWeather.Columns[0].Width := 51;
   aGridWeather.Columns[1].Width := 51;
   aGridWeather.Columns[2].Width := 51;
   aGridWeather.Columns[3].Width := 51;
-  if aGridWeather.Tag = 0 then
-    aGridWeather.Columns[4].Width := 51;
   aGridWeather.Rows[0].Height := 24;
 
   aGridWeather.Height := 24;
-
-  if aGridWeather.Tag = 3 then
-    aGridWeather.Width := 51*4
-  else aGridWeather.Width := 51*5;
+  aGridWeather.Width := 51*4;
 
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '0.bmp' );
   bmp.Stretch(51,24);
-  aGridWeather.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 0, 0, 1 , bmp, true );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '1.bmp' );
   bmp.Stretch(51,24);
-  aGridWeather.AddSE_Bitmap ( 1, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 1, 0, 1 , bmp, true );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '2.bmp' );
   bmp.Stretch(51,24);
-  aGridWeather.AddSE_Bitmap ( 2, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 2, 0, 1 , bmp, true );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + '3.bmp' );
   bmp.Stretch(51,24);
-  aGridWeather.AddSE_Bitmap ( 3, 0, 1 , bmp, false );
+  aGridWeather.AddSE_Bitmap ( 3, 0, 1 , bmp, true );
   bmp.Free;
-
-  if aGridWeather.Tag = 0 then begin
-    bmp := SE_bitmap.Create ( dir_bmpWeather + 'r.bmp' );
-    bmp.Stretch(51,24);
-    aGridWeather.AddSE_Bitmap ( 4, 0, 1 , bmp, false );
-    bmp.Free;
-  end;
 
   aGridWeather.CellsEngine.ProcessSprites(20);
   aGridWeather.RefreshSurface ( aGridWeather );
 
 end;
-procedure TForm1.SelectSetupWeather (aGridWeather: Se_grid; Col : integer);
+procedure TForm1.SetWeather (aGridWeather: Se_grid; Col : integer);
 begin
   ResetSetupWeather ( aGridWeather ) ;
   aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
-  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
-  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(1,1);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,1);
   aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,23);
-  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,23);
-  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(1,23);
+  aGridWeather.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(1,1);
   aGridWeather.CellsEngine.ProcessSprites(20);
   aGridWeather.RefreshSurface ( aGridWeather );
 
-  if aGridWeather = Form1.SE_GridWeather then begin // solo panelMain
-
-    if Col = 4 then
-      Brain.Weather := Brain.rndGenerate0 ( 3 )
-      else Brain.Weather := Col;
-
-    case Brain.Weather of
-      0: Brain.Track :=0;
-      1: Brain.Track :=0;
-      2: Brain.Track :=0;
-      3: Brain.Track :=1;
-    end;
-  end;
 
 end;
 procedure TForm1.ResetSetupQual;
@@ -728,12 +703,12 @@ begin
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + 't.bmp' );
   bmp.Stretch(51,24);
-  SE_GridQual.AddSE_Bitmap ( 0, 0, 1 , bmp, false );
+  SE_GridQual.AddSE_Bitmap ( 0, 0, 1 , bmp, True );
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_bmpWeather + 'r.bmp' );
   bmp.Stretch(51,24);
-  SE_GridQual.AddSE_Bitmap ( 1, 0, 1 , bmp, false );
+  SE_GridQual.AddSE_Bitmap ( 1, 0, 1 , bmp, True );
   bmp.Free;
 
   SE_GridQual.CellsEngine.ProcessSprites(20);
@@ -744,11 +719,11 @@ procedure TForm1.SelectSetupQual ( Col : integer);  // Disegno un bordo rosso
 begin
   ResetSetupQual;
   SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.Pen.Color := clRed;
-  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(0,0);
-  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,0);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.MoveTo(1,1);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,1);
   SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(50,23);
-  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,23);
-  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(0,0);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(1,23);
+  SE_GridQual.Cells[Col,0].Bitmap.Bitmap.Canvas.LineTo(1,1);
   SE_GridQual.CellsEngine.ProcessSprites(20);
   SE_GridQual.RefreshSurface ( SE_GridQual );
 
@@ -799,10 +774,6 @@ begin
 
 end;
 
-procedure TForm1.SE_GridWeatherGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;  Sprite: SE_Sprite);
-begin
-  SelectSetupWeather ( SE_GridWeather, CellX );
-end;
 procedure TForm1.SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState; var Handled: Boolean);
 begin
   SE_Theater1.ChangeCursor := True;
@@ -1119,7 +1090,7 @@ begin
     end;
 
 
-    Form1.SelectSetupWeather ( Form3.SE_GridWeather,  brain.Weather );
+    Form1.SetWeather ( Form3.SE_GridWeather,  brain.Weather );
   //  Exit;
   end
   else if (brain.Stage = StageQualifications)  or (brain.Stage = StageRace) then begin
@@ -1185,7 +1156,7 @@ begin
         Client.UserName := '';
         Client.Account := -1;
         SE_GridSetupPlayers.Cells[1,i].Guid := 0;
-        SE_GridSetupPlayers.Cells[1,i].FontColor := clYellow;
+        SE_GridSetupPlayers.Cells[1,i].FontColor := clBlack;
         SE_GridSetupPlayers.Cells[1,i].Text := 'Waiting for connection';
         SE_GridSetupPlayers.refreshSurface (SE_GridSetupPlayers) ;
         Break;
@@ -1352,7 +1323,7 @@ begin
         Cli.Account := I;
         SE_GridSetupPlayers.Cells[1,i].Guid := Cli.CliId;
         SE_GridSetupPlayers.Cells[1,i].Text := Cli.UserName;
-        SE_GridSetupPlayers.Cells[1,i].FontColor := clWhite;
+        SE_GridSetupPlayers.Cells[1,i].FontColor := clGray;
         SE_GridSetupPlayers.refreshSurface (SE_GridSetupPlayers) ;
         Break;
       end;
@@ -1513,7 +1484,7 @@ begin
   bmp := SE_bitmap.Create ( dir_Cars + '4.bmp' );
   bmp.Stretch(51,24);
   SE_GridCarColor.AddSE_Bitmap ( 0, 3, 1 , bmp, false );
-  SE_GridCarColor.Cells[0,4].ids := '3';
+  SE_GridCarColor.Cells[0,3].ids := '4';
   bmp.Free;
 
   bmp := SE_bitmap.Create ( dir_Cars + '5.bmp' );
