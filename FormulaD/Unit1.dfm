@@ -139,7 +139,7 @@ object Form1: TForm1
       ParentFont = False
     end
     object lblCPU: TLabel
-      Left = 224
+      Left = 166
       Top = 54
       Width = 40
       Height = 16
@@ -336,7 +336,7 @@ object Form1: TForm1
       OnCloseUp = cbHumanPlayersCloseUp
     end
     object cbCPU: TComboBox
-      Left = 270
+      Left = 238
       Top = 48
       Width = 49
       Height = 22
@@ -360,7 +360,7 @@ object Form1: TForm1
     object SE_GridSetupPlayers: SE_Grid
       Left = 8
       Top = 76
-      Width = 313
+      Width = 280
       Height = 101
       Cursor = crHandPoint
       MouseScrollRate = 1.000000000000000000

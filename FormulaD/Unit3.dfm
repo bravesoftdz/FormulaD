@@ -3,8 +3,8 @@ object Form3: TForm3
   Top = 0
   BorderIcons = []
   BorderStyle = bsSingle
-  ClientHeight = 275
-  ClientWidth = 510
+  ClientHeight = 347
+  ClientWidth = 478
   Color = 13892558
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -195,7 +195,7 @@ object Form3: TForm3
   end
   object btnTiresDry: TCnSpeedButton
     Left = 72
-    Top = 38
+    Top = 33
     Width = 24
     Height = 24
     Cursor = crHandPoint
@@ -209,7 +209,7 @@ object Form3: TForm3
   end
   object btnTiresWet: TCnSpeedButton
     Left = 95
-    Top = 38
+    Top = 33
     Width = 24
     Height = 24
     Cursor = crHandPoint
@@ -251,7 +251,7 @@ object Form3: TForm3
   end
   object lblPoints: TLabel
     Left = 144
-    Top = 38
+    Top = 33
     Width = 63
     Height = 16
     AutoSize = False
@@ -264,8 +264,8 @@ object Form3: TForm3
     ParentFont = False
   end
   object btnConfirmSetup: TCnSpeedButton
-    Left = 407
-    Top = 234
+    Left = 395
+    Top = 61
     Width = 74
     Height = 18
     Cursor = crHandPoint
@@ -286,7 +286,7 @@ object Form3: TForm3
   end
   object lblTiresType: TLabel
     Left = 8
-    Top = 38
+    Top = 33
     Width = 50
     Height = 16
     AutoSize = False
@@ -334,8 +334,8 @@ object Form3: TForm3
   end
   object SE_GridTires: SE_Grid
     Left = 8
-    Top = 68
-    Width = 256
+    Top = 61
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -371,7 +371,7 @@ object Form3: TForm3
   object SE_GridBrakes: SE_Grid
     Left = 8
     Top = 98
-    Width = 256
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -407,7 +407,7 @@ object Form3: TForm3
   object SE_GridBody: SE_Grid
     Left = 8
     Top = 158
-    Width = 256
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -443,7 +443,7 @@ object Form3: TForm3
   object SE_GridEngine: SE_Grid
     Left = 8
     Top = 188
-    Width = 256
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -479,7 +479,7 @@ object Form3: TForm3
   object SE_GridGear: SE_Grid
     Left = 8
     Top = 128
-    Width = 256
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -515,7 +515,7 @@ object Form3: TForm3
   object SE_GridSuspension: SE_Grid
     Left = 8
     Top = 218
-    Width = 256
+    Width = 280
     Height = 24
     Cursor = crHandPoint
     MouseScrollRate = 1.000000000000000000
@@ -548,126 +548,170 @@ object Form3: TForm3
     Font.Name = 'Tahoma'
     Font.Style = []
   end
-  object Button2: TButton
-    Left = 326
-    Top = 223
-    Width = 75
-    Height = 25
-    Caption = 'stay'
-    TabOrder = 7
-  end
   object Button3: TButton
-    Left = 326
-    Top = 242
+    Left = 395
+    Top = 257
     Width = 75
     Height = 25
     Caption = 'leave box'
-    TabOrder = 8
+    TabOrder = 7
   end
   object SE_PanelGear: SE_Panel
-    Left = 284
-    Top = 68
-    Width = 205
-    Height = 149
-    TabOrder = 9
-    object CnSpeedButton1: TCnSpeedButton
-      Left = 49
-      Top = 9
-      Width = 24
+    Left = 8
+    Top = 258
+    Width = 312
+    Height = 69
+    TabOrder = 8
+    object R12: TCnSpeedButton
+      Tag = 1
+      Left = 9
+      Top = 0
+      Width = 28
       Height = 24
       Cursor = crHandPoint
       Color = clBtnFace
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      GroupIndex = 1
-      Caption = '1'
+      Caption = '1-2'
       Margin = 4
-      OnMouseEnter = CnSpeedButton1MouseEnter
+      OnClick = R12Click
+      OnMouseEnter = R12MouseEnter
     end
-    object CnSpeedButton2: TCnSpeedButton
-      Left = 49
+    object R24: TCnSpeedButton
+      Tag = 2
+      Left = 39
+      Top = 0
+      Width = 28
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = '2-4'
+      Margin = 4
+      OnMouseEnter = R12MouseEnter
+    end
+    object R48: TCnSpeedButton
+      Tag = 3
+      Left = 69
+      Top = 0
+      Width = 28
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = '4-8'
+      Margin = 4
+      OnMouseEnter = R12MouseEnter
+    end
+    object R712: TCnSpeedButton
+      Tag = 4
+      Left = 99
+      Top = 0
+      Width = 76
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = '7-12'
+      Margin = 4
+      OnMouseEnter = R12MouseEnter
+    end
+    object R1120: TCnSpeedButton
+      Tag = 5
+      Left = 180
+      Top = 0
+      Width = 76
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = '11-20'
+      Margin = 4
+      OnMouseEnter = R12MouseEnter
+    end
+    object R2130: TCnSpeedButton
+      Tag = 6
+      Left = 262
+      Top = 0
+      Width = 36
+      Height = 24
+      Cursor = crHandPoint
+      Color = clBtnFace
+      DownBold = False
+      FlatBorder = False
+      HotTrackBold = False
+      Caption = '21-30'
+      Margin = 4
+      OnMouseEnter = R12MouseEnter
+    end
+    object R79: TCnSpeedButton
+      Tag = 4
+      Left = 99
       Top = 30
-      Width = 24
+      Width = 36
       Height = 24
       Cursor = crHandPoint
       Color = clBtnFace
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      GroupIndex = 1
-      Caption = '2'
+      Caption = '7-9'
       Margin = 4
+      OnMouseEnter = R12MouseEnter
     end
-    object CnSpeedButton3: TCnSpeedButton
-      Left = 49
-      Top = 54
-      Width = 24
+    object R1012: TCnSpeedButton
+      Tag = 4
+      Left = 138
+      Top = 30
+      Width = 36
       Height = 24
       Cursor = crHandPoint
       Color = clBtnFace
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      GroupIndex = 1
-      Caption = '3'
+      Caption = '10-12'
       Margin = 4
+      OnMouseEnter = R12MouseEnter
     end
-    object CnSpeedButton4: TCnSpeedButton
-      Left = 49
-      Top = 78
-      Width = 24
+    object R1115: TCnSpeedButton
+      Tag = 5
+      Left = 180
+      Top = 30
+      Width = 36
       Height = 24
       Cursor = crHandPoint
       Color = clBtnFace
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      GroupIndex = 1
-      Caption = '4'
+      Caption = '11-15'
       Margin = 4
+      OnMouseEnter = R12MouseEnter
     end
-    object CnSpeedButton5: TCnSpeedButton
-      Left = 49
-      Top = 102
-      Width = 24
+    object R1620: TCnSpeedButton
+      Tag = 5
+      Left = 220
+      Top = 30
+      Width = 36
       Height = 24
       Cursor = crHandPoint
       Color = clBtnFace
       DownBold = False
       FlatBorder = False
       HotTrackBold = False
-      GroupIndex = 1
-      Caption = '5'
+      Caption = '16-20'
       Margin = 4
-    end
-    object CnSpeedButton6: TCnSpeedButton
-      Left = 49
-      Top = 125
-      Width = 24
-      Height = 24
-      Cursor = crHandPoint
-      Color = clBtnFace
-      DownBold = False
-      FlatBorder = False
-      HotTrackBold = False
-      GroupIndex = 1
-      Caption = '6'
-      Margin = 4
-    end
-    object CnSpeedButton7: TCnSpeedButton
-      Left = 113
-      Top = 78
-      Width = 24
-      Height = 24
-      Cursor = crHandPoint
-      Color = clBtnFace
-      DownBold = False
-      FlatBorder = False
-      HotTrackBold = False
-      GroupIndex = 1
-      Caption = '4'
-      Margin = 4
+      OnMouseEnter = R12MouseEnter
     end
   end
 end

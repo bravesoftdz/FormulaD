@@ -21,18 +21,20 @@ type
     lblWeather: TLabel;
     lblTrack: TLabel;
     lblPoints: TLabel;
-    Button2: TButton;
     Button3: TButton;
     btnConfirmSetup: TCnSpeedButton;
     lblTiresType: TLabel;
     SE_PanelGear: SE_Panel;
-    CnSpeedButton1: TCnSpeedButton;
-    CnSpeedButton2: TCnSpeedButton;
-    CnSpeedButton3: TCnSpeedButton;
-    CnSpeedButton4: TCnSpeedButton;
-    CnSpeedButton5: TCnSpeedButton;
-    CnSpeedButton6: TCnSpeedButton;
-    CnSpeedButton7: TCnSpeedButton;
+    R12: TCnSpeedButton;
+    R24: TCnSpeedButton;
+    R48: TCnSpeedButton;
+    R712: TCnSpeedButton;
+    R1120: TCnSpeedButton;
+    R2130: TCnSpeedButton;
+    R79: TCnSpeedButton;
+    R1012: TCnSpeedButton;
+    R1115: TCnSpeedButton;
+    R1620: TCnSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
@@ -43,7 +45,8 @@ type
     procedure SE_GridGearGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure SE_GridSuspensionGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer;Sprite: SE_Sprite);
     procedure btnConfirmSetupClick(Sender: TObject);
-    procedure CnSpeedButton1MouseEnter(Sender: TObject);
+    procedure R12MouseEnter(Sender: TObject);
+    procedure R12Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -126,10 +129,19 @@ begin
 
 end;
 
-procedure TForm3.CnSpeedButton1MouseEnter(Sender: TObject);
+procedure TForm3.R12Click(Sender: TObject);
 begin
-  //brain.calculateAllChance ( aCar, Gear ) MyCar,1  O .TAG
+    Form1.tcp.SendStr( TCnSpeedButton (sender).Name  + EndofLine );  // example R712 R1012 R48
 
+end;
+
+procedure TForm3.R12MouseEnter(Sender: TObject);
+var
+  aCar : TCar;
+begin
+  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  brain.calculateAllChance ( aCar, TCnSpeedButton (sender).Name );// ritorna una lista di InteractiveCells con punteggio roll
+// chanceCell.Roll chanceCell.Malus chanceCell.Risk sono liste di possibili eventi
 end;
 
 procedure TForm3.FormCreate(Sender: TObject);

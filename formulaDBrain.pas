@@ -45,6 +45,11 @@ type TCell = Class
   constructor Create;
   destructor Destroy;override;
 end;
+type TChanceCell = Class
+  Cell : TCell;
+  Roll : Integer;
+  Risk : string;
+end;
 type TCar = Class
   Guid : Byte;
   CliId : Integer;
@@ -116,6 +121,9 @@ type TFormulaDBrain = class
 
   function FindCar ( Guid : Integer ): TCar;
   procedure SaveData ( CurMove: Integer ) ;
+
+  function CalculateAllChance ( aCar : TCar; RollDice: string ): TChanceCell;
+  procedure GetLinkForward ( aCell: TCell; lstLinkForward: TObjectList<TCell>);
 
   function RndGenerate( Upper: integer ): integer;
   function RndGenerate0( Upper: integer ): integer;
@@ -347,6 +355,42 @@ begin
 // if log   MMbraindata.SaveToFile( dir_log +  brainIds  + '\' + Format('%.*d',[3, incMove]) + '.IS'  );
 end;
 
+function TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string ): TChanceCell;
+var
+  i,L,R,Rmin,Rmax: Integer;
+  StartCell, aCell : TCell;
+  lstLinkForward: TObjectList<TCell>;
+begin
+  lstLinkForward:= TObjectList<TCell>.Create ( false );
+
+  if RollDice = '12' then begin
+    Rmin := 1;
+    Rmax := 2;
+  end;
+
+  StartCell := aCar.Cell;
+  for R := Rmin to Rmax do begin
+    GetLinkForward ( StartCell, lstLinkForward );
+    for I := 0 to lstLinkForward.Count -1 do begin
+
+    end;
+
+  end;
+
+  lstLinkForward.Free;
+
+end;
+procedure TFormulaDBrain.GetLinkForward ( aCell: TCell; lstLinkForward: TObjectList<TCell>);
+var
+  i: Integer;
+  aCellLinked :TCell;
+begin
+  for I := 0 to aCell.LinkForward.Count -1 do begin
+    aCellLinked :=  Findcell ( aCell.LinkForward.Items[i]);         // dalla cella alla linkedCell
+    lstLinkForward.Add(aCellLinked);
+  end;
+end;
 
 end.
+
 
