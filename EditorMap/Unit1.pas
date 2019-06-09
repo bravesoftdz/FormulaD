@@ -107,7 +107,7 @@ implementation
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  i,L,a,count: Integer;
+  i,L,a,count,tmpI: Integer;
   TotCells: SmallInt;
   TotLinkForward, TotAdjacent, tmpb: Byte;
 begin
@@ -130,15 +130,15 @@ begin
     TotLinkForward := Circuit[i].LinkForward.Count;
     mm.Write( @TotLinkForward, sizeof(byte) );
     for L := Circuit[i].LinkForward.Count -1 Downto 0 do begin
-      tmpb := Circuit[i].LinkForward.Items[L];
-      mm.Write( @tmpb, sizeof(byte) );
+      tmpI := Circuit[i].LinkForward.Items[L];
+      mm.Write( @tmpI, sizeof(integer) );
     end;
 
     TotAdjacent := Circuit[i].Adjacent.Count;
     mm.Write( @TotAdjacent, sizeof(byte) );
     for a := Circuit[i].Adjacent.Count -1 Downto 0 do begin
-      tmpb := Circuit[i].Adjacent.Items[a];
-      mm.Write( @tmpb, sizeof(byte) );
+      tmpI := Circuit[i].Adjacent.Items[a];
+      mm.Write( @tmpI, sizeof(integer) );
     end;
 
   end;
@@ -151,7 +151,7 @@ procedure TForm1.LoadCircuit ( CircuitName: string );
 var
   ini : TIniFile;
   TotCells,tmpSmallInt: SmallInt;
-  i,L,a,count: Integer;
+  i,L,a,count,tmpI: Integer;
   aCell: TCell;
   TotLinkForward, TotAdjacent, tmpb: Byte;
   aBmp: SE_Bitmap;
@@ -185,13 +185,13 @@ begin
       // load linkForward e Adjacent
     mm.Read( TotLinkForward, SizeOf(Byte) );
     for L := 0 to TotLinkForward -1 do begin
-      mm.Read( tmpB , SizeOf(Byte) );
-      aCell.LinkForward.add ( tmpB );
+      mm.Read( tmpI , SizeOf(integer) );
+      aCell.LinkForward.add ( tmpI );
     end;
     mm.Read( TotAdjacent, SizeOf(Byte) );
     for A := 0 to TotAdjacent -1 do begin
-      mm.Read( tmpB , SizeOf(Byte) );
-      aCell.Adjacent.add ( tmpB );
+      mm.Read( tmpI , SizeOf(integer) );
+      aCell.Adjacent.add ( tmpI );
     end;
 
     // tutte clgray all'inizio
@@ -242,7 +242,7 @@ begin
 			   'Warning!', MB_YESNO) = ID_YES then begin
 
     for I := 0 to Circuit.Count -1 do begin
-      Circuit[i].Guid := i + 1;
+  //    Circuit[i].Guid := i + 1;
       Circuit[i].LinkForward.Clear;
       Circuit[i].Adjacent.Clear;
     end;

@@ -1,7 +1,7 @@
 unit formulaDBrain;
 
 interface
-uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types,
+uses DSE_list, generics.collections, generics.defaults, system.classes, System.SysUtils, System.Types,Winapi.Windows,
 
   ZLIBEX,
   DSE_Theater, DSE_Random;
@@ -122,8 +122,8 @@ type TFormulaDBrain = class
   function FindCar ( Guid : Integer ): TCar;
   procedure SaveData ( CurMove: Integer ) ;
 
-  function CalculateAllChance ( aCar : TCar; RollDice: string ): TChanceCell;
-  procedure GetLinkForward ( aCell: TCell; lstLinkForward: TObjectList<TCell>);
+  procedure CalculateAllChance ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
+  procedure GetLinkForward ( aCell: TCell; var lstLinkForward: TObjectList<TCell>);
 
   function RndGenerate( Upper: integer ): integer;
   function RndGenerate0( Upper: integer ): integer;
@@ -355,32 +355,58 @@ begin
 // if log   MMbraindata.SaveToFile( dir_log +  brainIds  + '\' + Format('%.*d',[3, incMove]) + '.IS'  );
 end;
 
-function TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string ): TChanceCell;
+procedure TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
 var
   i,L,R,Rmin,Rmax: Integer;
   StartCell, aCell : TCell;
-  lstLinkForward: TObjectList<TCell>;
+  lstLinkForwardDist1: TObjectList<TCell>;
+ // lstLinkForwardDist1: TObjectList<TCell>;
+  aChanceCell : TChanceCell;
+  label incR;
 begin
-  lstLinkForward:= TObjectList<TCell>.Create ( false );
 
-  if RollDice = '12' then begin
+  lstChanceCell.Clear;
+  lstLinkForwardDist1 := TObjectList<TCell>.Create ( true );
+
+  if RollDice = 'R12' then begin
     Rmin := 1;
     Rmax := 2;
   end;
 
+  R := Rmin;
   StartCell := aCar.Cell;
-  for R := Rmin to Rmax do begin
-    GetLinkForward ( StartCell, lstLinkForward );
-    for I := 0 to lstLinkForward.Count -1 do begin
-
-    end;
-
+  GetLinkForward ( StartCell, lstLinkForwardDist1);
+  for L := 0 to lstLinkForwardDist1.Count -1 do begin
+    aChanceCell := TChanceCell.Create;
+    aChanceCell.Cell := lstLinkForwardDist1[L];
+    aChanceCell.Roll := R;
+    lstChanceCell.Add( aChanceCell);
   end;
 
-  lstLinkForward.Free;
+//  outputdebugstring ( PChar(IntToStr(Circuit.count)));
+//  lstLinkForwardDist1.Free;          // non elimina le celle di circuit
+//  outputdebugstring ( PChar(IntToStr(Circuit.count)));
+incR:
+  inc (R);
+  if R > rmax then
+    Exit;
+
+//  lstLinkForwardDist1.Clear; // <-- distanza 1 di nuovo vuota
+  for L := 0 to lstLinkForwardDist1.Count -1 do begin
+    StartCell := lstLinkForwardDist1[L];
+    GetLinkForward ( StartCell, lstLinkForwardDist1); // errore qui
+
+    aChanceCell := TChanceCell.Create;
+    aChanceCell.Cell := lstLinkForwardDist1[L];
+    aChanceCell.Roll := R;
+    lstChanceCell.Add( aChanceCell);
+  end;
+
+  goto IncR;
+
 
 end;
-procedure TFormulaDBrain.GetLinkForward ( aCell: TCell; lstLinkForward: TObjectList<TCell>);
+procedure TFormulaDBrain.GetLinkForward ( aCell: TCell; var lstLinkForward: TObjectList<TCell>);
 var
   i: Integer;
   aCellLinked :TCell;

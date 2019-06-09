@@ -3,7 +3,7 @@ unit Unit3;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,System.Generics.Defaults, System.Generics.Collections,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls, DSE_Panel;
 Type TStat = ( statTires, StatBrakes, StatGear, StatBody, StatEngine, StatSuspension );
 type
@@ -138,10 +138,14 @@ end;
 procedure TForm3.R12MouseEnter(Sender: TObject);
 var
   aCar : TCar;
+  lstChanceCell : TObjectList<TChanceCell>;
 begin
   aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  brain.calculateAllChance ( aCar, TCnSpeedButton (sender).Name );// ritorna una lista di InteractiveCells con punteggio roll
-// chanceCell.Roll chanceCell.Malus chanceCell.Risk sono liste di possibili eventi
+  lstChanceCell := TObjectList<TChanceCell>.create (False);
+
+  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name,lstChanceCell );// ritorna una lista di InteractiveCells con punteggio roll
+  lstChanceCell.free;
+  // chanceCell.Roll chanceCell.Malus chanceCell.Risk sono liste di possibili eventi
 end;
 
 procedure TForm3.FormCreate(Sender: TObject);

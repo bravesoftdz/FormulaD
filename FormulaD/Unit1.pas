@@ -1501,7 +1501,7 @@ procedure TForm1.LoadCircuit ( CircuitName: string );
 var
   ini : TIniFile;
   TotCells: SmallInt;
-  i,L,a: Integer;
+  i,L,a,tmpI: Integer;
   aCell: TCell;
   TotLinkForward, TotAdjacent, tmpb: Byte;
   aSprite: SE_Sprite;
@@ -1532,13 +1532,13 @@ begin
       // load linkForward e Adjacent
     mm.Read( TotLinkForward, SizeOf(Byte) );
     for L := 0 to TotLinkForward -1 do begin
-      mm.Read( tmpB , SizeOf(Byte) );
-      aCell.LinkForward.add ( tmpB );
+      mm.Read( tmpI , SizeOf(Integer) );
+      aCell.LinkForward.add ( tmpI );
     end;
     mm.Read( TotAdjacent, SizeOf(Byte) );
     for A := 0 to TotAdjacent -1 do begin
-      mm.Read( tmpB , SizeOf(Byte) );
-      aCell.Adjacent.add ( tmpB );
+      mm.Read( tmpI , SizeOf(Integer) );
+      aCell.Adjacent.add ( tmpI );
     end;
 
     brain.Circuit.Add(aCell);
