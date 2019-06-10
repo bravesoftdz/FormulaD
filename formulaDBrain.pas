@@ -123,6 +123,7 @@ type TFormulaDBrain = class
   procedure SaveData ( CurMove: Integer ) ;
 
   procedure CalculateAllChance ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
+  procedure GetAllChanceCells ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
   procedure GetLinkForward ( aCell: TCell; var lstLinkForward: TObjectList<TCell>);
 
   function RndGenerate( Upper: integer ): integer;
@@ -354,19 +355,28 @@ begin
 
 // if log   MMbraindata.SaveToFile( dir_log +  brainIds  + '\' + Format('%.*d',[3, incMove]) + '.IS'  );
 end;
-
 procedure TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
+begin
+  GetAllChanceCells ( aCar, RollDice, lstChanceCell );
+  { TODO : Qui analizzo i vari path per trovare distanze, corner, car , ostacoli ecc... }
+
+end;
+procedure TFormulaDBrain.GetAllChanceCells ( aCar : TCar; RollDice: string; var lstChanceCell: TObjectList<TChanceCell> );
 var
   i,L,R,Rmin,Rmax: Integer;
   StartCell, aCell : TCell;
-  lstLinkForwardDist1: TObjectList<TCell>;
+//  lstLinkForwardDist1: TObjectList<TCell>;
  // lstLinkForwardDist1: TObjectList<TCell>;
+  lstLinkForwardDist1 : array[1..30] of TObjectList<TCell>;
   aChanceCell : TChanceCell;
-  label incR;
+  label incR, MyExit;
 begin
 
   lstChanceCell.Clear;
-  lstLinkForwardDist1 := TObjectList<TCell>.Create ( true );
+//  lstLinkForwardDist1 := TObjectList<TCell>.Create ( true );
+  for i := Low(lstLinkForwardDist1) to High(lstLinkForwardDist1) do begin
+    lstLinkForwardDist1[i] := TObjectList<TCell>.Create ( true );
+  end;
 
   if RollDice = 'R12' then begin
     Rmin := 1;
@@ -375,11 +385,12 @@ begin
 
   R := Rmin;
   StartCell := aCar.Cell;
-  GetLinkForward ( StartCell, lstLinkForwardDist1);
-  for L := 0 to lstLinkForwardDist1.Count -1 do begin
+  GetLinkForward ( StartCell, lstLinkForwardDist1[1]);
+  for L := 0 to lstLinkForwardDist1[1].Count -1 do begin
     aChanceCell := TChanceCell.Create;
-    aChanceCell.Cell := lstLinkForwardDist1[L];
-    aChanceCell.Roll := R;
+    aCell := FindCell(  lstLinkForwardDist1 [1] [L].Guid); //<--- link all'originale cell in Circuit
+    aChanceCell.Cell := aCell;
+    aChanceCell.Roll := 1;
     lstChanceCell.Add( aChanceCell);
   end;
 
@@ -389,22 +400,30 @@ begin
 incR:
   inc (R);
   if R > rmax then
-    Exit;
+    goto MyExit;
 
 //  lstLinkForwardDist1.Clear; // <-- distanza 1 di nuovo vuota
-  for L := 0 to lstLinkForwardDist1.Count -1 do begin
-    StartCell := lstLinkForwardDist1[L];
-    GetLinkForward ( StartCell, lstLinkForwardDist1); // errore qui
+  for L := 0 to lstLinkForwardDist1[R-1].Count -1 do begin
+    StartCell := lstLinkForwardDist1 [R-1] [L];
+    GetLinkForward ( StartCell, lstLinkForwardDist1[R]);
 
     aChanceCell := TChanceCell.Create;
-    aChanceCell.Cell := lstLinkForwardDist1[L];
+    aCell := FindCell(  lstLinkForwardDist1[R][L].Guid); //<--- link all'originale cell in Circuit
+    aChanceCell.Cell := aCell;
     aChanceCell.Roll := R;
     lstChanceCell.Add( aChanceCell);
   end;
 
   goto IncR;
 
+MyExit:
+  for i := Low(lstLinkForwardDist1) to High(lstLinkForwardDist1) do begin
+    lstLinkForwardDist1[i].Free;  // non elimina le celle di circuit
+  end;
 
+  // lstChanceCell contiene tutte le possibili cell con Roll = aChanceCell.Roll
+
+  //  SetLength(lstLinkForwardDist1,0);
 end;
 procedure TFormulaDBrain.GetLinkForward ( aCell: TCell; var lstLinkForward: TObjectList<TCell>);
 var
