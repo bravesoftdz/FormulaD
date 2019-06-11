@@ -562,6 +562,7 @@ object Form3: TForm3
     Width = 312
     Height = 69
     TabOrder = 8
+    Visible = False
     object R12: TCnSpeedButton
       Tag = 1
       Left = 9

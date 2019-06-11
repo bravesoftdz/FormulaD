@@ -139,13 +139,20 @@ procedure TForm3.R12MouseEnter(Sender: TObject);
 var
   aCar : TCar;
   lstChanceCell : TObjectList<TChanceCell>;
+  i: Integer;
 begin
-  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  Exit;
+//  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
+  aCar := Brain.FindCar( brain.CurrentCar );
   lstChanceCell := TObjectList<TChanceCell>.create (False);
 
   brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name,lstChanceCell );// ritorna una lista di InteractiveCells con punteggio roll
-  lstChanceCell.free;
+  for I := 0 to lstChanceCell.Count -1 do begin
+    //lstChanceCell[i].Cell.PixelX, lstChanceCell[i].Cell.PixelY  scrivo il teso e gli effetti
+  end;
+
   // chanceCell.Roll chanceCell.Malus chanceCell.Risk sono liste di possibili eventi
+  lstChanceCell.free;
 end;
 
 procedure TForm3.FormCreate(Sender: TObject);
@@ -615,8 +622,6 @@ begin
 end;
 procedure TForm3.ShowGear;
 var
-  bmp : SE_bitmap;
-  i,r,h: Integer;
   aCar: TCar;
 begin
   // Nessun pulsate per edting è visibile

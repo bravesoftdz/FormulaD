@@ -1067,6 +1067,7 @@ begin
   end;
 
   if (Brain.Stage = StageSetupQ) or (brain.Stage = StageSetupRace)  or (brain.Stage = StagePitStop) then begin
+    Form3.SE_PanelGear.Visible:=false;
     if Brain.Track = TrackDry then
       Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'dry.bmp' )
       else Form3.imgTrack.Picture.LoadFromFile(  dir_bmpWeather + 'wet.bmp' );
@@ -1096,6 +1097,7 @@ begin
   else if (brain.Stage = StageQualifications)  or (brain.Stage = StageRace) then begin
     SE_Theater1.Active := True;
     SE_Theater1.Visible := True;
+    Form3.SE_PanelGear.Visible:=True;
     Form3.Show;
     Form3.ShowGear ( MyCarAccount );
 
@@ -1503,7 +1505,7 @@ var
   TotCells: SmallInt;
   i,L,a,tmpI: Integer;
   aCell: TCell;
-  TotLinkForward, TotAdjacent, tmpb: Byte;
+  TotLinkForward, TotAdjacent: Byte;
   aSprite: SE_Sprite;
 begin
   brain.Circuit.clear;
