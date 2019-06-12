@@ -1593,6 +1593,7 @@ begin
     Brain.lstCarsTmp.Add( Brain.lstCars[i]  );
   end;
 
+  // random ordine di qualifiche. Non è random la startinggrid
   for I := ((brain.lstCarsTmp.count -1) * 2 ) downto 0 do begin
     brain.lstCarsTmp.Exchange( Brain.RndGenerate0( brain.lstCarsTmp.count -1 ), Brain.RndGenerate0( brain.lstCarsTmp.count -1 ) );
   end;

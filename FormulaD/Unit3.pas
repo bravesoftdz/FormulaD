@@ -146,7 +146,7 @@ begin
   aCar := Brain.FindCar( brain.CurrentCar );
   lstChanceCell := TObjectList<TChanceCell>.create (False);
 
-  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name,lstChanceCell );// ritorna una lista di InteractiveCells con punteggio roll
+  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name );// ritorna una lista di InteractiveCells con punteggio roll
   for I := 0 to lstChanceCell.Count -1 do begin
     //lstChanceCell[i].Cell.PixelX, lstChanceCell[i].Cell.PixelY  scrivo il teso e gli effetti
   end;
@@ -212,17 +212,17 @@ begin
     btnTiresDry.Down := True
     else btnTiresWet.Down := True;
 
-  lblPoints.Tag := Brain.CarSetupPoints -6;
+  lblPoints.Tag := Brain.CarSetupPoints - 6;
   lblPoints.Caption := 'Points: ' + IntToStr( lblPoints.Tag );
   // sono visibili i pulsanti per settare i points
 
   aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  aCar.TiresMax := Brain.CarSetupPoints - 6;
-  aCar.BrakesMax := Brain.CarSetupPoints - 6;
-  aCar.BodyMax := Brain.CarSetupPoints - 6;
-  aCar.GearMax := Brain.CarSetupPoints - 6;
-  aCar.EngineMax := Brain.CarSetupPoints - 6;
-  aCar.SuspensionMax := Brain.CarSetupPoints - 6;
+  aCar.TiresMax := Brain.CarSetupPoints - 5;
+  aCar.BrakesMax := Brain.CarSetupPoints - 5;
+  aCar.BodyMax := Brain.CarSetupPoints - 5;
+  aCar.GearMax := Brain.CarSetupPoints - 5;
+  aCar.EngineMax := Brain.CarSetupPoints - 5;
+  aCar.SuspensionMax := Brain.CarSetupPoints - 5;
   if Brain.laps = 3 then begin
     aCar.TiresMax := 14;
     aCar.BrakesMax := 7;

@@ -9,7 +9,7 @@ uses
   DSE_list, FormulaDBrain, DSE_theater, DSE_Bitmap, DSE_SearchFiles, DSE_Misc, Vcl.ExtCtrls, Vcl.StdCtrls, CnSpin, System.IniFiles, Vcl.Grids;
 
 type TMode = ( modeAddCell{C}, modeLinkForward{L}, modeAdjacent{A}, modeMoveCell{M}, modeSelectCell{S}, modePanZoom{Z},
-                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F},modeDistance{D}, modeAngle{N} ) ;
+                modeCorner{K},modeStartingGrid{G}, modeBox{B}, modefinishLine{F},modeDistance{D}, modeAngle{N},modeGuid{I} ) ;
 type
   TForm1 = class(TForm)
     SE_Theater1: SE_Theater;
@@ -82,6 +82,7 @@ type
     procedure ResetSpriteCells;
     procedure ShowCorners;
     procedure ShowAngle;
+    procedure ShowGuid;
     procedure ShowStartingGrid;
     procedure ShowBox;
     procedure ShowfinishLine;
@@ -357,6 +358,11 @@ begin
                   aText := 'Set Car Angle';
                   carSprite.Visible := True;
                  end;
+    modeGuid:    begin
+                  ShowGuid;
+                  aColor := clBlack;
+                  aText := 'Guid Info';
+                 end;
     modeStartingGrid:  begin
                   Panel3.Visible := True;
                   ShowStartingGrid;
@@ -433,6 +439,9 @@ begin
   end
   else if UpperCase(Key) = 'N' then begin
     Mode := modeAngle;
+  end
+  else if UpperCase(Key) = 'I' then begin
+    Mode := modeGuid;
   end
   else if UpperCase(Key) = 'G' then begin
     Mode := modeStartingGrid;
@@ -946,6 +955,28 @@ begin
       aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
       aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, FloatToStr(Circuit[i].Angle ));
+
+  end;
+
+end;
+procedure TForm1.ShowGuid;
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+begin
+  ResetSpriteCells;
+  for i := Circuit.Count -1 downto 0 do begin
+
+      aSprite := SE_Engine2.FindSprite( IntToStr(Circuit[i].Guid) ); // dalla cella allo sprite
+      aSprite.bmp.Bitmap.Canvas.Brush.color := clLime;
+      aSprite.bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+      aSprite.bmp.Bitmap.Canvas.Font.color := clNavy;
+      aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
+      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, FloatToStr(Circuit[i].Guid ));
 
   end;
 
