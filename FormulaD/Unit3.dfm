@@ -715,4 +715,26 @@ object Form3: TForm3
       OnMouseEnter = R12MouseEnter
     end
   end
+  object DebugCbPath: TComboBox
+    Left = 312
+    Top = 220
+    Width = 62
+    Height = 22
+    BevelEdges = []
+    BevelInner = bvNone
+    BevelOuter = bvNone
+    Style = csOwnerDrawFixed
+    Color = 13892558
+    Ctl3D = False
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clGray
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    MaxLength = 1
+    ParentCtl3D = False
+    ParentFont = False
+    TabOrder = 9
+    OnCloseUp = DebugCbPathCloseUp
+  end
 end

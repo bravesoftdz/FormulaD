@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,System.Generics.Defaults, System.Generics.Collections,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls, DSE_Panel;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, DSE_theater, DSE_GRID, Vcl.ExtCtrls, CnButtons, DSE_Bitmap, Vcl.StdCtrls, DSE_Panel, formulaDBrain;
 Type TStat = ( statTires, StatBrakes, StatGear, StatBody, StatEngine, StatSuspension );
 type
   TForm3 = class(TForm)
@@ -35,6 +35,7 @@ type
     R1012: TCnSpeedButton;
     R1115: TCnSpeedButton;
     R1620: TCnSpeedButton;
+    DebugCbPath: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure SE_GridTiresGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
     procedure btnTiresDryClick(Sender: TObject);
@@ -47,6 +48,8 @@ type
     procedure btnConfirmSetupClick(Sender: TObject);
     procedure R12MouseEnter(Sender: TObject);
     procedure R12Click(Sender: TObject);
+    procedure DebugCbPathCloseUp(Sender: TObject);
+    procedure ColorizePath ( aPath: TObjectList<TCell> );
   private
     { Private declarations }
   public
@@ -64,7 +67,7 @@ var
   Form3: TForm3;
 
 implementation
-uses Unit1, formulaDBrain;
+uses Unit1;
 
 {$R *.dfm}
 procedure TForm3.btnConfirmSetupClick(Sender: TObject);
@@ -129,6 +132,39 @@ begin
 
 end;
 
+procedure TForm3.DebugCbPathCloseUp(Sender: TObject);
+var
+  aPath :TObjectList<TCell>;
+begin
+  aPath := TObjectList<TCell>(DebugCbPath.Items.Objects[DebugCbPath.ItemIndex]);
+  ColorizePath ( aPath );
+end;
+procedure TForm3.ColorizePath ( aPath: TObjectList<TCell> );
+var
+  i: Integer;
+  aSprite: SE_Sprite;
+  aCell : TCell;
+  bmp: SE_Bitmap;
+begin
+  Form1.SE_EngineCells.RemoveAllSprites;
+  for i := 0 to aPath.Count -1 do begin
+      aCell := brain.FindCell( aPath[i].guid );
+      bmp:= SE_Bitmap.Create ( 22,16 );
+      bmp.Bitmap.Canvas.Brush.color := clLime;
+      bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+      bmp.Bitmap.Canvas.Font.color := clNavy;
+      Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      bmp.Bitmap.Canvas.Font.Size := 8;
+     // bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+
+      aSprite := Form1.SE_EngineCells.CreateSprite ( bmp.bitmap ,  IntToStr(aPath[i].guid),1,1,1000, aCell.PixelX, aCell.PixelY , True );
+      bmp.Free;
+      aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, IntToStr(aPath[i].guid ));
+
+  end;
+
+end;
 procedure TForm3.R12Click(Sender: TObject);
 begin
     Form1.tcp.SendStr( TCnSpeedButton (sender).Name  + EndofLine );  // example R712 R1012 R48
@@ -141,7 +177,7 @@ var
   lstChanceCell : TObjectList<TChanceCell>;
   i: Integer;
 begin
-  Exit;
+//  Exit;
 //  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
   aCar := Brain.FindCar( brain.CurrentCar );
   lstChanceCell := TObjectList<TChanceCell>.create (False);
@@ -159,6 +195,9 @@ procedure TForm3.FormCreate(Sender: TObject);
 var
   bmp : SE_Bitmap;
 begin
+  Brain.DebugComboBox :=  DebugCbPath;
+
+
   bmp := SE_Bitmap.Create  ( dir_bmpWeather + 'TiresDry.bmp' );
   bmp.Stretch( 20,24 );
   bmp.Bitmap.SaveToFile( dir_tmp  + 'TiresDry.bmp' );

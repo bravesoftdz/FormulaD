@@ -706,4 +706,13 @@ object Form1: TForm1
     Left = 256
     Top = 746
   end
+  object SE_EngineCells: SE_Engine
+    ClickSprites = False
+    PixelCollision = False
+    IsoPriority = False
+    Priority = 1
+    Theater = SE_Theater1
+    Left = 584
+    Top = 736
+  end
 end

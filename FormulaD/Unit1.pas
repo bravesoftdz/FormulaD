@@ -73,6 +73,7 @@ type
     SE_EngineBack: SE_Engine;
     btnCancelGame: TCnSpeedButton;
     ThreadCurMove: SE_ThreadTimer;
+    SE_EngineCells: SE_Engine;
     procedure FormCreate(Sender: TObject);
     procedure btnCreateGameClick(Sender: TObject);
     procedure btnStartServerClick(Sender: TObject);
@@ -534,7 +535,6 @@ begin
     MM3[i]:= TMemoryStream.Create;
   end;
   Brain := TFormulaDBrain.Create;
-
 
   dir_tmp :=  ExtractFilePath (Application.ExeName)+ 'tmp\';
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
