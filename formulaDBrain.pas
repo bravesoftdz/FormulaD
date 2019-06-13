@@ -410,6 +410,7 @@ var
   lstNextCells,lstCellsTmp : TObjectList<TCell>;
   Base,Distance:Integer;
   aNewPath : TObjectList<TCell>;
+  StartPossiblePathCount: Integer;
 function DuplicatePath ( aPath:TObjectList<TCell> ):TObjectList<TCell>;
 var
   aNewPath : TObjectList<TCell>;
@@ -438,16 +439,29 @@ begin
 
   Distance := 1;
 Retry:
-  for I := PossiblePaths.Count -1 downto 0 do begin
+  StartPossiblePathCount := PossiblePaths.Count;
+  for I := StartPossiblePathCount -1 downto 0 do begin
+    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Items[PossiblePaths[i].Count-1].Guid )));
+
     GetLinkForward ( PossiblePaths[i].Items[PossiblePaths[i].Count-1], lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
-    for pp := 0 to lstCellsTmp.count -1 do begin
-      if Pp > 0 then begin // almeno 2 LF , forse 3
-        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path
-        aNewPath.Add( lstCellsTmp[pp] );
+
+    case lstCellsTmp.count  of
+      1: PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+      2: begin
+        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+        aNewPath.Add( lstCellsTmp[1] );
         PossiblePaths.Add( aNewPath );
-      end
-      else
-        PossiblePaths[i].Add(lstCellsTmp[pp]);   //<-- trova un livello successivo
+        PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+      end;
+      3: begin  // non possono esostere celle con 4 linkedCell
+        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+        aNewPath.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
+        PossiblePaths.Add( aNewPath );                   // aggiunge il nuovo path alla lista dei path possibili
+        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+        aNewPath.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
+        PossiblePaths.Add( aNewPath );                   // aggiunge il nuovo path alla lista dei path possibili
+        PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+      end;
     end;
 
   end;
@@ -470,7 +484,7 @@ var
 begin
   lstLinkForward.Clear;
   for I := 0 to aCell.LinkForward.Count -1 do begin
-    aCellLinked :=  Findcell ( aCell.LinkForward.Items[i]);         // dalla cella alla linkedCell
+    aCellLinked :=  Findcell ( aCell.LinkForward.Items[i] );         // dalla cella alla linkedCell
     lstLinkForward.Add(aCellLinked);
   end;
 end;

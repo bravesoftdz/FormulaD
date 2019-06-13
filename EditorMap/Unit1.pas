@@ -973,7 +973,7 @@ begin
       aSprite.bmp.Bitmap.Canvas.Font.color := clNavy;
       aSprite.Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
       aSprite.bmp.Bitmap.Canvas.Font.Size := 8;
-      aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
+    //  aSprite.bmp.Bitmap.Canvas.Font.Style := [fsBold];
       aSprite.bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
       aSprite.bmp.Bitmap.Canvas.TextOut( 7,2, FloatToStr(Circuit[i].Guid ));
