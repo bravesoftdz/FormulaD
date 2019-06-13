@@ -87,6 +87,13 @@ type TCar = Class
   destructor Destroy;override;
 
 end;
+type TPossiblePath = class
+  Path : TObjectList<TCell>;
+  Finished : Boolean;
+  ZigZag : Byte;
+  constructor Create();
+  destructor Destroy; override;
+end;
 
 type TFormulaDBrain = class
   private
@@ -113,9 +120,9 @@ type TFormulaDBrain = class
     Circuit : TObjectList<TCell>;
     CircuitDescr: TCircuitDescr;
 
+    PossiblePaths : TObjectList<TPossiblePath>;
 
-
-    PossiblePaths : TObjectList<TObjectList<TCell>>;
+   // PossiblePaths : TObjectList<TObjectList<TCell>>;
     DebugComboBox: TComboBox;
 
     procedure SetCurrentCar ( aValue: Byte );
@@ -142,6 +149,15 @@ type TFormulaDBrain = class
   property CurrentCar : byte read fCurrentCar write SetCurrentCar;
 end;
 implementation
+constructor TPossiblePath.Create;
+begin
+  Path := TObjectList<TCell>.Create(False);
+end;
+destructor TPossiblePath.Destroy;
+begin
+  Path.Free;
+  inherited;
+end;
 constructor TCar.Create;
 begin
   Path := SE_IntegerList.Create;
@@ -176,7 +192,7 @@ begin
   RandGen := TtdCombinedPRNG.Create(0, 0);
   MMbraindata:= TMemoryStream.Create;
   MMbraindataZIP:= TMemoryStream.Create ;
-  PossiblePaths := TObjectList<TObjectList<TCell>>.Create;
+  PossiblePaths := TObjectList<TPossiblePath>.Create(True);
 
 end;
 destructor TFormulaDBrain.Destroy;
@@ -388,16 +404,21 @@ procedure TFormulaDBrain.CreatePossiblePath   ( aCar: TCar);
 var
   StartCell: TCell;
   i: Integer;
-  aPath : TObjectList<TCell>;
+  aPossiblePath : TPossiblePath;
+  //aPath : TObjectList<Tcell>;
   lstTmpCells: TObjectList<TCell>;
 begin
   lstTmpCells:= TObjectList<TCell>.Create(False);
   StartCell := aCar.Cell;
   GetLinkForward ( StartCell, lstTmpCells);
   for I := 0 to lstTmpCells.Count -1 do begin
-    aPath := TObjectList<TCell>.Create(false);
-    aPath.add ( lstTmpCells[i] );
-    PossiblePaths.Add(aPath);
+    aPossiblePath := TPossiblePath.Create;
+
+    //aPossiblePath.Path := TObjectList<TCell>.Create(false);
+    aPossiblePath.ZigZag:=0;
+    aPossiblePath.Finished := False;
+    aPossiblePath.Path.add ( lstTmpCells[i] );
+    PossiblePaths.Add(aPossiblePath);
   end;
   lstTmpCells.Free;
 end;
@@ -409,18 +430,20 @@ var
   aChanceCell  : TChanceCell;
   lstNextCells,lstCellsTmp : TObjectList<TCell>;
   Base,Distance:Integer;
-  aNewPath : TObjectList<TCell>;
+  aNewPossiblePath : TPossiblePath;
   StartPossiblePathCount: Integer;
-function DuplicatePath ( aPath:TObjectList<TCell> ):TObjectList<TCell>;
+function DuplicatePossiblePath ( aPossiblePath:TPossiblePath  ): TPossiblePath;
 var
-  aNewPath : TObjectList<TCell>;
+  aNewPossiblePath : TPossiblePath;
   i: Integer;
 begin
-  aNewPath := TObjectList<TCell>.Create(False);
-  for I := 0 to aPath.Count -1 do begin
-    aNewPath.Add( aPath[i] );
+  aNewPossiblePath := TPossiblePath.Create;
+  for I := 0 to aPossiblePath.Path.Count -1 do begin
+    aNewPossiblePath.Path.Add( aPossiblePath.Path[i] );
+    aNewPossiblePath.Finished := aPossiblePath.Finished;
+    aNewPossiblePath.ZigZag := aPossiblePath.ZigZag;
   end;
-  Result := aNewPath;
+  Result := aNewPossiblePath;
 end;
   label retry;
 begin
@@ -430,6 +453,9 @@ begin
   end
   else if RollDice = 'R24' then begin
     Rmax := 4;
+  end
+  else if RollDice = 'R48' then begin
+    Rmax := 8;
   end
   else Exit;// pe ril momento
 
@@ -441,26 +467,33 @@ begin
 Retry:
   StartPossiblePathCount := PossiblePaths.Count;
   for I := StartPossiblePathCount -1 downto 0 do begin
-    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Items[PossiblePaths[i].Count-1].Guid )));
-
-    GetLinkForward ( PossiblePaths[i].Items[PossiblePaths[i].Count-1], lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
+//    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Items[PossiblePaths[i].Count-1].Guid )));
+      { TODO : trasformo possiblePath in classe con Finished. zigzag. }
+    if PossiblePaths[i].Finished then continue;
+    GetLinkForward ( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1], lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
+//    if PossiblePaths[i].Path[PossiblePaths[i].Path.Count-1].Corner = 0 then
+//      CheckZigZag;
+       { TODO : bug. 1-2 ne fa 3, 2-4 ne fa 5. 2-4 elemento 3 è di sole 3 caselle }
+//    if PossiblePaths[i].Items[PossiblePaths[i].Count-1].Lane <> lstCellsTmp[0]  and istheracar=false then
+//      PossiblePaths[i].zigZag :=  PossiblePaths[i].zigZag +1 ;
+     // if zigzag > 2 then lstCellsTmp.delete[0]
 
     case lstCellsTmp.count  of
-      1: PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+      1: PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
       2: begin
-        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-        aNewPath.Add( lstCellsTmp[1] );
-        PossiblePaths.Add( aNewPath );
-        PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
+        aNewPossiblePath.Path.Add( lstCellsTmp[1] );
+        PossiblePaths.Add( aNewPossiblePath );
+        PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
       end;
       3: begin  // non possono esostere celle con 4 linkedCell
-        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-        aNewPath.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
-        PossiblePaths.Add( aNewPath );                   // aggiunge il nuovo path alla lista dei path possibili
-        aNewPath := DuplicatePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-        aNewPath.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
-        PossiblePaths.Add( aNewPath );                   // aggiunge il nuovo path alla lista dei path possibili
-        PossiblePaths[i].Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+        aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
+        PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
+        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+        aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
+        PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
+        PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
       end;
     end;
 
@@ -471,8 +504,9 @@ Retry:
 
   lstCellsTmp.Clear;
 
+  DebugComboBox.Clear;
   for I := 0 to PossiblePaths.Count -1  do begin  // tutti i path creati
-    DebugComboBox.AddItem( IntToStr(i), PossiblePaths[i] );
+    DebugComboBox.AddItem( IntToStr(i), PossiblePaths[i].Path );
   end;
 
 
