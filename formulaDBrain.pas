@@ -425,7 +425,7 @@ end;
 
 procedure TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string );
 var
-  i,Rmax,pp: Integer;
+  i,Rmax,D,CurrentIndexPossiblePath: Integer;
   TmplstChanceCell : TObjectList<TChanceCell>;
   aChanceCell  : TChanceCell;
   lstNextCells,lstCellsTmp : TObjectList<TCell>;
@@ -445,7 +445,6 @@ begin
   end;
   Result := aNewPossiblePath;
 end;
-  label retry;
 begin
 
   if RollDice = 'R12' then begin
@@ -464,43 +463,44 @@ begin
   lstCellsTmp := TObjectList<TCell>.Create ( false );
 
   Distance := 1;
-Retry:
-  StartPossiblePathCount := PossiblePaths.Count;
-  for I := StartPossiblePathCount -1 downto 0 do begin
-//    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Items[PossiblePaths[i].Count-1].Guid )));
-      { TODO : trasformo possiblePath in classe con Finished. zigzag. }
-    if PossiblePaths[i].Finished then continue;
-    GetLinkForward ( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1], lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
-//    if PossiblePaths[i].Path[PossiblePaths[i].Path.Count-1].Corner = 0 then
-//      CheckZigZag;
-       { TODO : bug. 1-2 ne fa 3, 2-4 ne fa 5. 2-4 elemento 3 è di sole 3 caselle }
-//    if PossiblePaths[i].Items[PossiblePaths[i].Count-1].Lane <> lstCellsTmp[0]  and istheracar=false then
-//      PossiblePaths[i].zigZag :=  PossiblePaths[i].zigZag +1 ;
-     // if zigzag > 2 then lstCellsTmp.delete[0]
 
-    case lstCellsTmp.count  of
-      1: PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
-      2: begin
-        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
-        aNewPossiblePath.Path.Add( lstCellsTmp[1] );
-        PossiblePaths.Add( aNewPossiblePath );
-        PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+  for D := 1 to rMax-1 do begin
+
+    StartPossiblePathCount := PossiblePaths.Count;
+    for I := StartPossiblePathCount -1 downto 0 do begin
+  //    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Items[PossiblePaths[i].Count-1].Guid )));
+        { TODO : trasformo possiblePath in classe con Finished. zigzag. }
+      if PossiblePaths[i].Finished then continue;
+      GetLinkForward ( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1], lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
+  //    if PossiblePaths[i].Path[PossiblePaths[i].Path.Count-1].Corner = 0 then
+  //      CheckZigZag;
+         { TODO : bug. 1-2 ne fa 3, 2-4 ne fa 5. 2-4 elemento 3 è di sole 3 caselle.FIXED Ok }
+  //    if PossiblePaths[i].Items[PossiblePaths[i].Count-1].Lane <> lstCellsTmp[0]  and istheracar=false then
+  //      PossiblePaths[i].zigZag :=  PossiblePaths[i].zigZag +1 ;
+       // if zigzag > 2 then lstCellsTmp.delete[0]
+      CurrentIndexPossiblePath := i; // i duplictae sotto cambiano I quindi uso CurrentIndex
+      case lstCellsTmp.count  of   // ne trova per forza da 1 a 3
+        1: PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+        2: begin
+
+          aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
+          aNewPossiblePath.Path.Add( lstCellsTmp[1] );
+          PossiblePaths.Add( aNewPossiblePath );
+          PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+        end;
+        3: begin  // non possono esostere celle con 4 linkedCell
+          aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+          aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
+          PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
+          aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
+          aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
+          PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
+          PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
+        end;
       end;
-      3: begin  // non possono esostere celle con 4 linkedCell
-        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-        aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
-        PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
-        aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[i] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-        aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
-        PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
-        PossiblePaths[i].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
-      end;
+
     end;
-
   end;
-  inc ( distance );
-  if Distance <= RMax then
-    goto retry;
 
   lstCellsTmp.Clear;
 
