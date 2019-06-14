@@ -90,7 +90,8 @@ end;
 type TPossiblePath = class
   Path : TObjectList<TCell>;
   Finished : Boolean;
-  ZigZag : Byte;
+  ZigZagLane : array [0..1] of ShortInt;
+  ZigZagTot : Byte;
   constructor Create();
   destructor Destroy; override;
 end;
@@ -152,6 +153,8 @@ implementation
 constructor TPossiblePath.Create;
 begin
   Path := TObjectList<TCell>.Create(False);
+  ZigZagLane [0] := -3;
+  ZigZagLane [1] := -3;
 end;
 destructor TPossiblePath.Destroy;
 begin
@@ -391,7 +394,7 @@ begin
 end;
 procedure TFormulaDBrain.CheckZigZag (aCar: TCar; IndexPossiblePath:Integer; aCell: TCell) ;
 var
-  StartLane, CurrentLane : Byte;
+  StartLane, CurrentLane : ShortInt;
   aCellStraight: TCell;
 begin
   // Qui devo ancora aggiungere aCell al PossiblePath e valuto il zigzag che avviene solo in rettilineo . Nel caso di Box nessun checkZigZag
@@ -408,12 +411,27 @@ begin
   // se c'è una car nella cella linkforward sulla stessa lane
   aCellStraight := GetLinkForwardSameLane ( PossiblePaths[IndexPossiblePath].Path[PossiblePaths[IndexPossiblePath].Path.Count -1] );
   if IsThereACar( aCellStraight ) = nil then begin // dritto non c'è nessuna car
-    PossiblePaths[IndexPossiblePath].ZigZag := PossiblePaths[IndexPossiblePath].ZigZag + 1;
+    If PossiblePaths[IndexPossiblePath].ZigZagTot = 2 then begin
+      PossiblePaths[IndexPossiblePath].ZigZagTot := 3;
+      PossiblePaths[IndexPossiblePath].Finished := True; // e in seguito non aggiunge aCell.
+      Exit;
+    end
+    else If PossiblePaths[IndexPossiblePath].ZigZagTot = 1 then begin
+      if ( (PossiblePaths[IndexPossiblePath].ZigZagLane[0] = aCell.lane)  or (PossiblePaths[IndexPossiblePath].ZigZagLane[0] = Startlane))  then begin // torno su una precedente lane quindi non posso
+        PossiblePaths[IndexPossiblePath].Finished := True; // e in seguito non aggiunge aCell.
+        Exit;
+      end;
+      PossiblePaths[IndexPossiblePath].ZigZagLane[1]:= aCell.Lane; // zigzagtot diventa 2
+      PossiblePaths[IndexPossiblePath].ZigZagTot := 2;              // ma non finished
+
+    end
+    else If PossiblePaths[IndexPossiblePath].ZigZagTot = 0 then begin
+      PossiblePaths[IndexPossiblePath].ZigZagLane[0]:= aCell.Lane;
+      PossiblePaths[IndexPossiblePath].ZigZagTot := 1;
+    end;
+
   end;
-  { TODO : FINIRE QUI ZIGZAG }
-  // qui il path muore
-  if PossiblePaths[IndexPossiblePath].ZigZag = 3 then
-    PossiblePaths[IndexPossiblePath].Finished := True; // e in seguito non aggiunge aCell.
+  // se dritto c'è una car non conta il zigzag
 
 end;
 function TFormulaDBrain.IsThereACar ( aCell: TCell ): TCar;
@@ -444,7 +462,7 @@ begin
     aPossiblePath := TPossiblePath.Create;
 
     //aPossiblePath.Path := TObjectList<TCell>.Create(false);
-    aPossiblePath.ZigZag:=0;
+    aPossiblePath.ZigZagTot:=0;
     aPossiblePath.Finished := False;
     aPossiblePath.Path.add ( lstTmpCells[i] );
     PossiblePaths.Add(aPossiblePath);
@@ -470,10 +488,13 @@ begin
   for I := 0 to aPossiblePath.Path.Count -1 do begin
     aNewPossiblePath.Path.Add( aPossiblePath.Path[i] );
     aNewPossiblePath.Finished := aPossiblePath.Finished;
-    aNewPossiblePath.ZigZag := aPossiblePath.ZigZag;
+    aNewPossiblePath.ZigZagTot := aPossiblePath.ZigZagTot;
+    aNewPossiblePath.ZigZagLane[0] := aPossiblePath.ZigZagLane[0];
+    aNewPossiblePath.ZigZagLane[1] := aPossiblePath.ZigZagLane[1];
   end;
   Result := aNewPossiblePath;
 end;
+label c0,c0b,c2;
 begin
 
   if RollDice = 'R12' then begin
@@ -505,38 +526,49 @@ begin
         1: begin
           if lstCellsTmp[0].Corner = 0 then
             CheckZigZag ( aCar, CurrentIndexPossiblePath,lstCellsTmp[0]) ;  //<-- può porre Finished = true
-          if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+
           PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
         end;
         2: begin
           if lstCellsTmp[1].Corner = 0 then
             CheckZigZag (aCar, CurrentIndexPossiblePath,lstCellsTmp[1]) ;  //<-- può porre Finished = true
-          if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then goto c0;
+
           aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
           aNewPossiblePath.Path.Add( lstCellsTmp[1] );
           PossiblePaths.Add( aNewPossiblePath );
 
+c0:
           if lstCellsTmp[0].Corner = 0 then
             CheckZigZag (aCar, CurrentIndexPossiblePath,lstCellsTmp[0]) ;  //<-- può porre Finished = true
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+
           PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
         end;
         3: begin  // non possono esostere celle con 4 linkedCell
           if lstCellsTmp[1].Corner = 0 then
             CheckZigZag (aCar, CurrentIndexPossiblePath,lstCellsTmp[1]) ;  //<-- può porre Finished = true
-          if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then goto c2;
+
           aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
           aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
           PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
-
+c2:
           if lstCellsTmp[2].Corner = 0 then
             CheckZigZag (aCar, CurrentIndexPossiblePath,lstCellsTmp[2]) ;  //<-- può porre Finished = true
-          if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then goto c0b;
+
           aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
           aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
           PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
 
+c0b:
+
           if lstCellsTmp[0].Corner = 0 then
             CheckZigZag (aCar, CurrentIndexPossiblePath,lstCellsTmp[0]) ;  //<-- può porre Finished = true
+            if PossiblePaths[CurrentIndexPossiblePath].Finished then continue;
+
           PossiblePaths[CurrentIndexPossiblePath].Path.Add(lstCellsTmp[0]);   //<-- infine trova e aggiunge un livello successivo. tutte le cell sono linked almeno a 1 cella
         end;
       end;
@@ -548,6 +580,8 @@ begin
 
   DebugComboBox.Clear;
   for I := 0 to PossiblePaths.Count -1  do begin  // tutti i path creati
+    if  not PossiblePaths[i].Finished then
+
     DebugComboBox.AddItem( IntToStr(i), PossiblePaths[i].Path );
   end;
 
