@@ -1620,8 +1620,8 @@ begin
 
 //  Brain.lstCarsTmp.Sort
 
-
- // Brain.CurrentCar := Brain.lstCarsTmp[0].Guid;
+  aCell := brain.FindStartingGrid(1);
+  Brain.CurrentCar := Brain.GetCarAtCell( aCell ).Guid;
  // Brain.lstCarsTmp[0].inGame := True;  //<-- modifica anche l'oggetto in lstcars
  // aCell := Brain.FindCellStartingGrid(1);
  // Brain.lstCarsTmp[0].Cell := aCell;
