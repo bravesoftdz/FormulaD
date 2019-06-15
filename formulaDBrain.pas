@@ -78,7 +78,9 @@ type TCar = Class
   EngineMax: ShortInt;
   SuspensionMax: ShortInt;
 
-  LastGear: ShortInt;
+  CurrentGear: ShortInt;
+  NextCorner : Byte;
+  Stops : ShortInt;
 
   ConfirmedSetupQ : Boolean;
   ConfirmedSetupR : Boolean;
@@ -125,7 +127,7 @@ type TFormulaDBrain = class
 
    // PossiblePaths : TObjectList<TObjectList<TCell>>;
     DebugComboBox: TComboBox;
-
+    CurrentRoll: ShortInt;
     procedure SetCurrentCar ( aValue: Byte );
   constructor Create;
   destructor Destroy;override;
@@ -148,7 +150,7 @@ type TFormulaDBrain = class
   function RndGenerate( Upper: integer ): integer;
   function RndGenerate0( Upper: integer ): integer;
   function RndGenerateRange( Lower, Upper: integer ): integer;
-
+  function BrainInput ( InputText : string ): string;
   property CurrentCar : byte read fCurrentCar write SetCurrentCar;
 end;
 implementation
@@ -360,6 +362,7 @@ begin
   MMbraindata.Write( @Track, SizeOf(Byte) );
   MMbraindata.Write( @Stage, SizeOf(Byte) );
   MMbraindata.Write( @fCurrentCar, SizeOf(Byte) );
+  MMbraindata.Write( @CurrentRoll, SizeOf(Byte) );
 
   MMbraindata.Write( @Laps, SizeOf(Byte) );
 
@@ -497,7 +500,7 @@ end;
 
 procedure TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string );
 var
-  i,Rmax,D,CurrentIndexPossiblePath: Integer;
+  i,k,Rmax,D,CurrentIndexPossiblePath: Integer;
   TmplstChanceCell : TObjectList<TChanceCell>;
   aChanceCell  : TChanceCell;
   lstNextCells,lstCellsTmp : TObjectList<TCell>;
@@ -584,13 +587,23 @@ begin
           end;
         end;
 
+      end
+      else begin  // in curva non si può zigzagare quindi si seguono per forza le frecce
+        for k := 0 to lstCellsTmp.count -1 do begin
+          aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
+          aNewPossiblePath.Path.Add( lstCellsTmp[i] );
+          PossiblePaths.Add( aNewPossiblePath );
+
+        end;
+
+
       end;
     end;
 
 
   end;
 
-  lstCellsTmp.Clear;
+  lstCellsTmp.Free;
 
   DebugComboBox.Clear;
   for I := 0 to PossiblePaths.Count -1  do begin  // tutti i path creati
@@ -635,7 +648,80 @@ begin
   end;
 
 end;
+function TFormulaDBrain.BrainInput ( InputText : string ): string;
+var
+  aCar : TCar;
+begin
+  aCar := FindCar(  CurrentCar );
 
+  if InputText = 'R12' then begin
+    if (aCar.CurrentGear = 1) or (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3)   then begin
+      CurrentRoll:= RndGenerate( 2 );
+      aCar.CurrentGear := 1;
+    end;
+  end
+  else if InputText = 'R24' then begin
+    if (aCar.CurrentGear = 1) or (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  then begin
+      CurrentRoll:= RndGenerateRange ( 2,4 );
+      aCar.CurrentGear := 2;
+    end;
+  end
+  else if InputText = 'R48' then begin
+    if (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) then begin
+      CurrentRoll:= RndGenerateRange ( 2,4 );
+      aCar.CurrentGear := 3;
+    end;
+  end
+  else if InputText = 'R712' then begin
+    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 7,12 );
+      aCar.CurrentGear := 4;
+    end;
+  end
+  else if InputText = 'R1120' then begin
+    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 11,20 );
+      aCar.CurrentGear := 5;
+    end;
+  end
+  else if InputText = 'R2130' then begin
+    if (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 21,30 );
+      aCar.CurrentGear := 6;
+    end;
+  end
+  else if InputText = 'R79' then begin
+    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 7,9 );
+      aCar.CurrentGear := 4;
+    end;
+  end
+  else if InputText = 'R1012' then begin
+    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 10,12 );
+      aCar.CurrentGear := 4;
+    end;
+  end
+  else if InputText = 'R1115' then begin
+    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 11,15 );
+      aCar.CurrentGear := 5;
+    end;
+  end
+  else if InputText = 'R1620' then begin
+    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+      CurrentRoll:= RndGenerateRange ( 16,20 );
+      aCar.CurrentGear := 5;
+    end;
+  end
+  else if InputText = 'SETCAR' then begin   { TODO : leftstr }
+    // brain.Currentroll := 0
+    // calcola tutti i path e vede se c'è'
+    // riempe il path della car
+
+  end;
+
+end;
 
 {
     lstLinkForwardDist1 : array[1..30] of TObjectList<TCell>;

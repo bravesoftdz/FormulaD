@@ -96,6 +96,7 @@ type
     procedure TcpserverClientDisconnect(Sender: TObject; Client: TWSocketClient; Error: Word);
     procedure TcpserverDataAvailable(Sender: TObject; ErrCode: Word);
 
+
         function validate_and_WriteSetupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
         procedure LoadCarRndPreset ( aCar : TCar );
 
@@ -915,6 +916,8 @@ begin
 
   Brain.fCurrentCar :=  Ord( buf3[incMove][ cur ]);  // <-- non innesca la AI
   cur := cur + 1 ;
+  Brain.CurrentRoll :=  Ord( buf3[incMove][ cur ]);
+  cur := cur + 1 ;
 
   Brain.Laps :=  Ord( buf3[incMove][ cur ]);
   cur := cur + 1 ;
@@ -1100,7 +1103,8 @@ begin
     Form3.SE_PanelGear.Visible:=True;
     Form3.Show;
     Form3.ShowGear ( MyCarAccount );
-
+    // form3.ShowPossiblePaths <-- illumina le celle come debugcb
+    // if lstcars[i].path.count > 0 ....animazione
   end;
 
 // NOTE HERE
@@ -1217,6 +1221,7 @@ begin
   aCar.Suspension := aCar.SuspensionMax;
 
 end;
+
 function TForm1.validate_and_WriteSetupCar (  Cli: TWSocketThrdClient;  Commatext : string ):Boolean;
 var
   aCar : TCar;
@@ -1309,7 +1314,72 @@ begin
   end;
 
 
-  if ts[0] ='login' then begin
+  if LeftStr(ts[0],1) ='R' then begin
+    if (Brain.CurrentCar = Cli.Account) and ( (brain.Stage = StageQualifications) or (brain.Stage = StageRace) ) then begin  // solo se sta a quel player
+      { TODO : anche qui in brainInput perchè la Ai passa di li }
+      if (ts[0] = 'R12') or (ts[0] = 'R24') or (ts[0] = 'R48') or (ts[0] = 'R712') or (ts[0] = 'R1120') or (ts[0] = 'R2130') or (ts[0] = 'R79') or
+        (ts[0] = 'R1012') or (ts[0] = 'R1115') or (ts[0] = 'R1620') then begin
+          Brain.BrainInput ( ts[0] ); // check se può usare quella marcia
+      end
+      else if ts[0] = 'R24' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 2,4 );
+      end
+      else if ts[0] = 'R48' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 2,4 );
+      end
+      else if ts[0] = 'R712' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 7,12 );
+      end
+      else if ts[0] = 'R1120' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 11,20 );
+      end
+      else if ts[0] = 'R2130' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 21,30 );
+      end
+      else if ts[0] = 'R79' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 7,9 );
+      end
+      else if ts[0] = 'R1012' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 10,12 );
+      end
+      else if ts[0] = 'R1115' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 11,15 );
+      end
+      else if ts[0] = 'R1620' then begin
+          Brain.CurrentRoll:= brain.RndGenerateRange ( 16,20 );
+      end
+      else begin
+        ts.Free;
+        Exit;
+      end;
+    end
+    else begin
+      ts.Free;
+      Exit;
+    end;
+      // la richiesta di Roll viene elaborata e salcata nel brain. è come in time120 con i freekick
+      Brain.SaveData ( Brain.ServerIncMove ) ;
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
+          TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  )
+                                                     + AnsiChar (  tcpserver.Client[i].Account )
+                                                     + GetbrainStream ( brain ) +  EndOfLine );  //<-- stageQualifications e currentCar util nel client
+      end;
+      Brain.ServerIncMove := Brain.ServerIncMove + 1;
+  end
+  else if ts[0] ='SETCAR' then begin
+    // validate setCar ( cli.account car , cellGuid ) 1 numerico da 0 a lstcars
+      brain.BrainInput ( ts.commaText ); // --> anche la AI passa di qui
+      Brain.SaveData ( Brain.ServerIncMove ) ;
+      for I := 0 to Tcpserver.ClientCount -1 do begin
+          { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
+          TcpServer.Client[i].SendStr( 'BEGINBRAIN'  + AnsiChar (  Brain.ServerIncMove  )
+                                                     + AnsiChar (  tcpserver.Client[i].Account )
+                                                     + GetbrainStream ( brain ) +  EndOfLine );  //<-- stageQualifications e currentCar util nel client
+      end;
+      Brain.ServerIncMove := Brain.ServerIncMove + 1;
+  end
+  else if ts[0] ='login' then begin
     if ts.Count <> 3 then begin
       ts.Free;
       exit;

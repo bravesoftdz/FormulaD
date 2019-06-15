@@ -592,6 +592,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '2-4'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R48: TCnSpeedButton
@@ -607,6 +608,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '4-8'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R712: TCnSpeedButton
@@ -622,6 +624,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '7-12'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R1120: TCnSpeedButton
@@ -637,6 +640,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '11-20'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R2130: TCnSpeedButton
@@ -652,6 +656,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '21-30'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R79: TCnSpeedButton
@@ -667,6 +672,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '7-9'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R1012: TCnSpeedButton
@@ -682,6 +688,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '10-12'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
     object R1115: TCnSpeedButton
@@ -712,6 +719,7 @@ object Form3: TForm3
       HotTrackBold = False
       Caption = '16-20'
       Margin = 4
+      OnClick = R12Click
       OnMouseEnter = R12MouseEnter
     end
   end
@@ -736,5 +744,6 @@ object Form3: TForm3
     ParentFont = False
     TabOrder = 9
     OnCloseUp = DebugCbPathCloseUp
+    OnSelect = DebugCbPathSelect
   end
 end

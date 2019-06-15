@@ -50,6 +50,7 @@ type
     procedure R12Click(Sender: TObject);
     procedure DebugCbPathCloseUp(Sender: TObject);
     procedure ColorizePath ( aPath: TObjectList<TCell> );
+    procedure DebugCbPathSelect(Sender: TObject);
   private
     { Private declarations }
   public
@@ -139,6 +140,11 @@ begin
   aPath := TObjectList<TCell>(DebugCbPath.Items.Objects[DebugCbPath.ItemIndex]);
   ColorizePath ( aPath );
 end;
+procedure TForm3.DebugCbPathSelect(Sender: TObject);
+begin
+  DebugCbPathCloseUp ( Sender);
+end;
+
 procedure TForm3.ColorizePath ( aPath: TObjectList<TCell> );
 var
   i: Integer;
