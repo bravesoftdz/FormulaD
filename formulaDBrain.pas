@@ -500,7 +500,7 @@ end;
 
 procedure TFormulaDBrain.CalculateAllChance ( aCar : TCar; RollDice: string; MaxDistance: integer );
 var
-  i,k,Rmax,D,CurrentIndexPossiblePath: Integer;
+  i,k,Rmax,D: Integer;
   TmplstChanceCell : TObjectList<TChanceCell>;
   aChanceCell  : TChanceCell;
   lstNextCells,lstCellsTmp : TObjectList<TCell>;
@@ -550,14 +550,11 @@ begin
   //    OutputDebugString( pchar(  IntToStr( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1].Guid )));
       if PossiblePaths[i].Finished then continue;
 
-      if PossiblePaths[i].Path.Count = 2 then
-      if (PossiblePaths[i].Path[0].Guid = 525) and (PossiblePaths[i].Path[1].Guid = 219) then  asm int 3 ; end;
+     // if PossiblePaths[i].Path.Count = 2 then
+//      if (PossiblePaths[i].Path[0].Guid = 525) and (PossiblePaths[i].Path[1].Guid = 219) then  asm int 3 ; end;
 
 
       GetLinkForward ( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1], false, lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
-  //    if PossiblePaths[i].Items[PossiblePaths[i].Count-1].Lane <> lstCellsTmp[0]  and istheracar=false then
-  //      PossiblePaths[i].zigZag :=  PossiblePaths[i].zigZag +1 ;
-//      CurrentIndexPossiblePath := i; // i duplictae sotto cambiano I quindi uso CurrentIndex
       CurrentPath :=  PossiblePaths[i];
       if lstCellsTmp[0].Corner = 0 then begin
         case lstCellsTmp.count  of   // ne trova per forza da 1 a 3
@@ -567,11 +564,10 @@ begin
           end;
           2: begin
             aNewPossiblePath := DuplicatePossiblePath ( CurrentPath );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
-            aNewPossiblePath.Path.Add( lstCellsTmp[1] );
 
             if CheckZigZag ( aCar, aNewPossiblePath ,lstCellsTmp[1]) then goto c0 ;  //<-- può porre Finished = true
+            aNewPossiblePath.Path.Add( lstCellsTmp[1] );
             PossiblePaths.Add( aNewPossiblePath );
-
 
   c0:
             if CheckZigZag ( aCar, CurrentPath,lstCellsTmp[0]) then continue ;  //<-- può porre Finished = true
@@ -579,16 +575,17 @@ begin
           end;
           3: begin  // non possono esostere celle con 4 linkedCell
             aNewPossiblePath := DuplicatePossiblePath ( CurrentPath );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-            aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
-
             if CheckZigZag ( aCar, aNewPossiblePath,lstCellsTmp[1]) then goto c2 ;  //<-- può porre Finished = true
+
+            aNewPossiblePath.Path.Add( lstCellsTmp[1] );                 // aggiunge l'ultima cella trovata
             PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
 
 
   c2:
             aNewPossiblePath := DuplicatePossiblePath (CurrentPath );  //<-- aggiunge un nuovo path privo dell'ultima cella trovata
-            aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
             if CheckZigZag ( aCar, aNewPossiblePath,lstCellsTmp[2]) then goto c0b ;  //<-- può porre Finished = true
+
+            aNewPossiblePath.Path.Add( lstCellsTmp[2] );                 // aggiunge l'ultima cella trovata
             PossiblePaths.Add( aNewPossiblePath );                   // aggiunge il nuovo path alla lista dei path possibili
 
 
@@ -602,7 +599,7 @@ begin
       end
       else begin  // in curva non si può zigzagare quindi si seguono per forza le frecce
         for k := 0 to lstCellsTmp.count -1 do begin
-          aNewPossiblePath := DuplicatePossiblePath ( PossiblePaths[CurrentIndexPossiblePath] );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
+          aNewPossiblePath := DuplicatePossiblePath ( CurrentPath );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
           aNewPossiblePath.Path.Add( lstCellsTmp[i] );
           PossiblePaths.Add( aNewPossiblePath );
 
@@ -625,7 +622,7 @@ begin
 
   if MaxDistance <> 0 then begin // seleziono solo i path con le celle finali a distanza MaxDistance
     for i := PossiblePaths.Count -1 downto 0 do begin
-      if PossiblePaths[i].Path.Count - MaxDistance + 1 <> 0  then begin // +1 perchè la cella di partenza è inclusa
+      if (PossiblePaths[i].Path.Count - (MaxDistance + 1)) <> 0  then begin // +1 perchè la cella di partenza è inclusa
         PossiblePaths.Delete(i);
       end;
     end;

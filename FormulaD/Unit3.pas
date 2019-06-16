@@ -138,8 +138,11 @@ procedure TForm3.DebugCbPathCloseUp(Sender: TObject);
 var
   aPath :TObjectList<TCell>;
 begin
-  aPath := TObjectList<TCell>(DebugCbPath.Items.Objects[DebugCbPath.ItemIndex]);
-  ColorizePath ( aPath );
+  if DebugCbPath.Items.Count > 0 then begin
+
+    aPath := TObjectList<TCell>(DebugCbPath.Items.Objects[DebugCbPath.ItemIndex]);
+    ColorizePath ( aPath );
+  end;
 end;
 procedure TForm3.DebugCbPathSelect(Sender: TObject);
 begin
