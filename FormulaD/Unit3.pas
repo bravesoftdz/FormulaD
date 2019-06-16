@@ -59,6 +59,7 @@ type
     procedure SetupPitStop;
     procedure SetupR;
     procedure ShowGear (CarAccount : Byte);
+    procedure ShowDestinationCells;
 
 
     procedure ShowCarStat ( Editing : boolean; CarAccount : Byte; Stat : TStat );
@@ -185,7 +186,7 @@ begin
 //  Exit;
 //  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
   aCar := Brain.FindCar( brain.CurrentCar );
-  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name );// ritorna una lista di InteractiveCells con punteggio roll
+  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name, 0 );// ritorna una lista di InteractiveCells con punteggio roll
 
 
 end;
@@ -677,5 +678,34 @@ begin
 
   SE_PanelGear.Visible := True;
 end;
+procedure TForm3.ShowDestinationCells;
+var
+  i: Integer;
+  aCell: TCell;
+  bmp: SE_Bitmap;
+  aSprite : SE_Sprite;
+begin
+  Brain.CalculateAllChance( brain.FindCar (Brain.CurrentCar), ''{no roll}, brain.CurrentRoll {si max distance}  );
+  for I := 0 to brain.PossiblePaths.count -1 do begin // tutti questi path sono lunghi brain.currentRoll + 1 e l'ultima cella mi interessa
+    aCell  :=  Brain.PossiblePaths[i].Path.Items[Brain.PossiblePaths[i].Path.Count -1 ];
+    // ora che ho la cella conosco pixel,pixely e posso evidenziarla. sono clicksprites cosi' che il successivo click farà SETCAR verso il server
+    // ci sono duplicati
+    Form1.SE_EngineCells.RemoveAllSprites;
+    bmp:= SE_Bitmap.Create ( 22,16 );
+    bmp.Bitmap.Canvas.Brush.color := clLime;
+    bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+    bmp.Bitmap.Canvas.Font.color := clNavy;
+    Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+    bmp.Bitmap.Canvas.Font.Size := 8;
+    bmp.Bitmap.Canvas.Brush.Style := bsClear;
+   // bmp.Bitmap.Canvas.Font.Style := [fsBold];
+    bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
+    aSprite := Form1.SE_EngineCells.CreateSprite ( bmp.bitmap ,  IntToStr(aCell.guid),1,1,1000, aCell.PixelX, aCell.PixelY , True );
+    bmp.Free;
+    aSprite.bmp.Bitmap.Canvas.TextOut( 10,2, IntToStr(brain.CurrentRoll ));
+
+  end;
+
+end;
 end.

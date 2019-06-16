@@ -707,7 +707,6 @@ object Form1: TForm1
     Top = 746
   end
   object SE_EngineCells: SE_Engine
-    ClickSprites = False
     PixelCollision = False
     IsoPriority = False
     Priority = 1

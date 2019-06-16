@@ -1102,9 +1102,17 @@ begin
     SE_Theater1.Visible := True;
     Form3.SE_PanelGear.Visible:=True;
     Form3.Show;
-    Form3.ShowGear ( MyCarAccount );
-    // form3.ShowPossiblePaths <-- illumina le celle come debugcb
-    // if lstcars[i].path.count > 0 ....animazione
+    if Brain.CurrentRoll = 0 then
+      Form3.ShowGear ( MyCarAccount )
+    else begin
+      form3.ShowDestinationCells; // <-- illumina le celle come debugcb
+      for i := 0 to Brain.lstcars.Count -1 do begin
+        if Brain.lstcars[i].path.count > 0 then begin
+          ThreadCurMove.Enabled := True;
+          Break;
+        end;
+      end;
+    end;
   end;
 
 // NOTE HERE
@@ -1285,6 +1293,7 @@ var
     ts: TStringList;
     i: Integer;
     aCar : TCar;
+    found: Boolean;
 begin
   Cli := Sender as TWSocketThrdClient;
 
@@ -1315,38 +1324,13 @@ begin
 
 
   if LeftStr(ts[0],1) ='R' then begin
-    if (Brain.CurrentCar = Cli.Account) and ( (brain.Stage = StageQualifications) or (brain.Stage = StageRace) ) then begin  // solo se sta a quel player
+//    if (Brain.CurrentCar = Cli.Account) and ( (brain.Stage = StageQualifications) or (brain.Stage = StageRace) ) then begin  // solo se sta a quel player
+ { TODO : rimettere la riga sopra. solo per debug }
+    if ( (brain.Stage = StageQualifications) or (brain.Stage = StageRace) ) then begin  // solo se sta a quel player
       { TODO : anche qui in brainInput perchè la Ai passa di li }
       if (ts[0] = 'R12') or (ts[0] = 'R24') or (ts[0] = 'R48') or (ts[0] = 'R712') or (ts[0] = 'R1120') or (ts[0] = 'R2130') or (ts[0] = 'R79') or
         (ts[0] = 'R1012') or (ts[0] = 'R1115') or (ts[0] = 'R1620') then begin
           Brain.BrainInput ( ts[0] ); // check se può usare quella marcia
-      end
-      else if ts[0] = 'R24' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 2,4 );
-      end
-      else if ts[0] = 'R48' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 2,4 );
-      end
-      else if ts[0] = 'R712' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 7,12 );
-      end
-      else if ts[0] = 'R1120' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 11,20 );
-      end
-      else if ts[0] = 'R2130' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 21,30 );
-      end
-      else if ts[0] = 'R79' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 7,9 );
-      end
-      else if ts[0] = 'R1012' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 10,12 );
-      end
-      else if ts[0] = 'R1115' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 11,15 );
-      end
-      else if ts[0] = 'R1620' then begin
-          Brain.CurrentRoll:= brain.RndGenerateRange ( 16,20 );
       end
       else begin
         ts.Free;
@@ -1368,7 +1352,26 @@ begin
       Brain.ServerIncMove := Brain.ServerIncMove + 1;
   end
   else if ts[0] ='SETCAR' then begin
-    // validate setCar ( cli.account car , cellGuid ) 1 numerico da 0 a lstcars
+      found := False;
+      if (ts.Count <> 2) then begin
+        ts.Free;
+        exit;
+      end;
+      if StrToIntDef( ts[1],-1) = -1 then begin
+        ts.Free;
+        exit;
+      end;
+      for I := 0 to brain.Circuit.Count -1 do begin
+        if Brain.Circuit[i].Guid = StrToInt( ts[1]) then begin
+          found := True;
+          Break;
+        end;
+
+      end;
+      if not found then begin
+        ts.Free;
+        exit;
+      end;
       brain.BrainInput ( ts.commaText ); // --> anche la AI passa di qui
       Brain.SaveData ( Brain.ServerIncMove ) ;
       for I := 0 to Tcpserver.ClientCount -1 do begin
