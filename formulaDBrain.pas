@@ -59,6 +59,11 @@ type TCar = Class
   AI: Boolean;
 
   Cell :TCell;
+  CurrentLap: Byte;
+  CurrentGear: ShortInt;
+  NextCorner : Byte;
+  Stops : ShortInt;
+
   Box : Byte;
   SE_Sprite : SE_Sprite;
   Path : SE_IntegerList;
@@ -78,9 +83,6 @@ type TCar = Class
   EngineMax: ShortInt;
   SuspensionMax: ShortInt;
 
-  CurrentGear: ShortInt;
-  NextCorner : Byte;
-  Stops : ShortInt;
 
   ConfirmedSetupQ : Boolean;
   ConfirmedSetupR : Boolean;
@@ -113,6 +115,7 @@ type TFormulaDBrain = class
     Track : Byte; // 0 dry 1 wet
     Stage: Byte;
     fCurrentCar: Byte;
+    CurrentTCar : TCar;
 
     Laps: Byte;
 
@@ -150,8 +153,12 @@ type TFormulaDBrain = class
   function RndGenerate( Upper: integer ): integer;
   function RndGenerate0( Upper: integer ): integer;
   function RndGenerateRange( Lower, Upper: integer ): integer;
-  function BrainInput ( InputText : string ): string;
+  function BrainInput ( InputCar: TCar; InputText : string ): string;
   property CurrentCar : byte read fCurrentCar write SetCurrentCar;
+  procedure AI_Think;
+    procedure AI_Think_Straight;
+    procedure AI_Think_Corner;
+    function AI_Roll_MaxGear: string;
 end;
 implementation
 constructor TPossiblePath.Create;
@@ -223,13 +230,11 @@ begin
 
 end;
 procedure TFormulaDBrain.SetCurrentCar( aValue : Byte );
-var
-  aCar : TCar;
 begin
   fCurrentCar := aValue;
-  aCar := FindCar( fCurrentCar );
-  if aCar.AI then begin
-//    AI_Think;
+  CurrentTCar := FindCar( fCurrentCar );
+  if CurrentTCar.AI then begin
+    AI_Think;
   end;
 
 end;
@@ -666,72 +671,74 @@ begin
   end;
 
 end;
-function TFormulaDBrain.BrainInput ( InputText : string ): string;
+function TFormulaDBrain.BrainInput ( InputCar: TCar;  InputText : string ): string;
 var
-  aCar : TCar;
   aCell : TCell;
   Ts : TStringList;
+  I: Integer;
 begin
-  aCar := FindCar(  CurrentCar );
+  if CurrentTCar <> FindCar( InputCar.Guid ) then
+    Exit;
 
   if InputText = 'R12' then begin
-    if (aCar.CurrentGear = 1) or (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3)   then begin
+    if (CurrentTCar.CurrentGear = 0) or (CurrentTCar.CurrentGear = 1) or (CurrentTCar.CurrentGear = 2) or (CurrentTCar.CurrentGear = 3)   then begin
       CurrentRoll:= RndGenerate( 2 );
-      aCar.CurrentGear := 1;
+      CurrentTCar.CurrentGear := 1;
     end;
   end
   else if InputText = 'R24' then begin
-    if (aCar.CurrentGear = 1) or (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  then begin
+    if (CurrentTCar.CurrentGear = 1) or (CurrentTCar.CurrentGear = 2) or (CurrentTCar.CurrentGear = 3) or (CurrentTCar.CurrentGear = 4)  then begin
       CurrentRoll:= RndGenerateRange ( 2,4 );
-      aCar.CurrentGear := 2;
+      CurrentTCar.CurrentGear := 2;
     end;
   end
   else if InputText = 'R48' then begin
-    if (aCar.CurrentGear = 2) or (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) then begin
+    if (CurrentTCar.CurrentGear = 2) or (CurrentTCar.CurrentGear = 3) or (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) then begin
       CurrentRoll:= RndGenerateRange ( 4,8 );
-      aCar.CurrentGear := 3;
+      CurrentTCar.CurrentGear := 3;
     end;
   end
   else if InputText = 'R712' then begin
-    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 3) or (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 7,12 );
-      aCar.CurrentGear := 4;
+      CurrentTCar.CurrentGear := 4;
     end;
   end
   else if InputText = 'R1120' then begin
-    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 11,20 );
-      aCar.CurrentGear := 5;
+      CurrentTCar.CurrentGear := 5;
     end;
   end
   else if InputText = 'R2130' then begin
-    if (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
+     { TODO : fare tutti i chack_stats }
       CurrentRoll:= RndGenerateRange ( 21,30 );
-      aCar.CurrentGear := 6;
+      CurrentTCar.CurrentGear := 6;
     end;
   end
   else if InputText = 'R79' then begin
-    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 3) or (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 7,9 );
-      aCar.CurrentGear := 4;
+      CurrentTCar.CurrentGear := 4;
     end;
   end
   else if InputText = 'R1012' then begin
-    if (aCar.CurrentGear = 3) or (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 3) or (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 10,12 );
-      aCar.CurrentGear := 4;
+      CurrentTCar.CurrentGear := 4;
     end;
   end
   else if InputText = 'R1115' then begin
-    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 11,15 );
-      aCar.CurrentGear := 5;
+      CurrentTCar.CurrentGear := 5;
     end;
   end
   else if InputText = 'R1620' then begin
-    if (aCar.CurrentGear = 4)  or (aCar.CurrentGear = 5) or (aCar.CurrentGear = 6) then begin
+    if (CurrentTCar.CurrentGear = 4)  or (CurrentTCar.CurrentGear = 5) or (CurrentTCar.CurrentGear = 6) then begin
       CurrentRoll:= RndGenerateRange ( 16,20 );
-      aCar.CurrentGear := 5;
+      CurrentTCar.CurrentGear := 5;
     end;
   end
   else if leftstr(InputText,6) = 'SETCAR' then begin
@@ -739,9 +746,79 @@ begin
     ts.CommaText := InputText;
     aCell := FindCell(  StrToInt( ts[1]) );
     // calcola tutti i path e vede se c'è' brain.CurrentRoll
-    // setta la car .riempe il path della car
-    // brain.Currentroll := 0
+    CalculateAllChance( CurrentTCar, '', CurrentRoll );
+    if PossiblePaths.Count > 0 then begin
+      Currentroll := 0;
+      // setta la car .riempe il path della car
+      CurrentTCar.Path.Clear;
+      for I := 0 to PossiblePaths[0].Path.Count -1 do begin
+        CurrentTCar.Path.Add( PossiblePaths[0].Path[i].Guid );
+      end;
+
+      CurrentTCar.Cell := FindCell( StrToInt( ts[1] )); // nel client l'animazione ha come elemento 0 la cell attuale prima del movimento
+      // calcolare cordoli in curva
+    end;
     Ts.Free;
+  end;
+
+end;
+procedure TFormulaDBrain.AI_Think;
+begin
+  if ( (Stage = StageQualifications) or (Stage = StageRace)  ) and (CurrentTCar.AI) then begin
+    if CurrentRoll = 0 then begin
+      if CurrentTCar.CurrentGear = 0 then
+        BrainInput( CurrentTCar, 'R12' )
+      else begin
+        if CurrentTCar.Cell.Corner = 0 then ai_think_straight
+          else ai_think_Corner;
+
+      end;
+    end;
+  end;
+
+end;
+procedure TFormulaDBrain.AI_Think_Straight;
+var
+  Roll: string;
+begin
+
+  if (CurrentTCar.CurrentLap = laps) and (CurrentTCar.NextCorner = 1) then begin // ultimo giro, sul rettilineo finale --> rollo al massimo
+    Roll := AI_Roll_MaxGear;
+    BrainInput( CurrentTCar, Roll );
+    Exit;
+  end;
+
+  // Quanto mi manca alla prossima curva. Adesso non mi interessa il numero di stop
+  case CurrentTCar.Cell.DistCorner of
+    30..255: begin
+      Roll := AI_Roll_MaxGear;
+      BrainInput( CurrentTCar, Roll );
+      Exit;
+    end;
+  end;
+
+  //      else if CurrentTCar.CurrentGear = 1 then begin
+        //BrainInput( CurrentTCar, 'R12' )
+        //BrainInput( CurrentTCar, 'SETCAR' )
+
+end;
+procedure TFormulaDBrain.AI_Think_Corner;
+begin
+//      else if CurrentTCar.CurrentGear = 1 then begin
+        //BrainInput( CurrentTCar, 'R12' )
+        //BrainInput( CurrentTCar, 'SETCAR' )
+
+end;
+function TFormulaDBrain.AI_Roll_MaxGear;
+begin
+  case CurrentTCar.CurrentGear of
+    0: result := 'R12';
+    1: result := 'R24';
+    2: result := 'R48';
+    3: result := 'R712';
+    4: result := 'R1120';
+    5: result := 'R2130';
+    6: result := 'R2130';
   end;
 
 end;

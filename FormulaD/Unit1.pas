@@ -108,6 +108,8 @@ type
       var Handled: Boolean);
     procedure SE_EngineCarsSpriteDestinationReached(ASprite: SE_Sprite);
     procedure ThreadCurMoveTimer(Sender: TObject);
+    procedure SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton;
+      Shift: TShiftState);
   private
     { Private declarations }
     procedure RefreshPlayerCPU;
@@ -775,6 +777,15 @@ begin
 
 end;
 
+procedure TForm1.SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
+begin
+  if lstsprite[0].Engine = SE_EngineCells then begin
+    SE_EngineCells.RemoveAllSprites;
+    tcp.SendStr(  'SETCAR,'+ lstsprite[0].Guid + EndOfLine);
+  end;
+
+end;
+
 procedure TForm1.SE_Theater1SpriteMouseMove(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Shift: TShiftState; var Handled: Boolean);
 begin
   SE_Theater1.ChangeCursor := True;
@@ -1330,7 +1341,7 @@ begin
       { TODO : anche qui in brainInput perchè la Ai passa di li }
       if (ts[0] = 'R12') or (ts[0] = 'R24') or (ts[0] = 'R48') or (ts[0] = 'R712') or (ts[0] = 'R1120') or (ts[0] = 'R2130') or (ts[0] = 'R79') or
         (ts[0] = 'R1012') or (ts[0] = 'R1115') or (ts[0] = 'R1620') then begin
-          Brain.BrainInput ( ts[0] ); // check se può usare quella marcia
+          Brain.BrainInput ( Brain.FindCar(Cli.Account), ts[0] ); // check se può usare quella marcia
       end
       else begin
         ts.Free;
@@ -1372,7 +1383,7 @@ begin
         ts.Free;
         exit;
       end;
-      brain.BrainInput ( ts.commaText ); // --> anche la AI passa di qui
+      brain.BrainInput ( Brain.FindCar(Cli.Account), ts.commaText ); // --> anche la AI passa di qui
       Brain.SaveData ( Brain.ServerIncMove ) ;
       for I := 0 to Tcpserver.ClientCount -1 do begin
           { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
@@ -1431,6 +1442,7 @@ begin
       end;
 
       StartQualifications;
+
       Brain.SaveData ( Brain.ServerIncMove ) ;
       for I := 0 to Tcpserver.ClientCount -1 do begin
           { TODO : ansichar dovrà occuparsi di un valore più alto di 255, diventa smallint }
@@ -1495,7 +1507,7 @@ begin
   for I := 0 to brain.lstCars.Count -1 do begin
     aCar := brain.lstCars[i];
     if aCar.Path.Count > 0 then begin
-      aCell := Brain.FindCell( aCar.Path[i] );
+      aCell := Brain.FindCell( aCar.Path[0] );
       aCar.SE_Sprite.MoverData.Destination := Point( aCell.PixelX, aCell.PixelY );
       aCar.Path.Delete(0);  // <-- elaborato il path viene svuotato di volta in volta
     end;
@@ -1663,6 +1675,7 @@ begin
   Brain.Stage := StageQualifications;
   Brain.lstCarsTmp.Clear;
   for I := 0 to brain.lstCars.count -1 do begin
+    brain.lstCars[i].CurrentGear := 0;
     Brain.lstCarsTmp.Add( Brain.lstCars[i]  );
   end;
 
@@ -1671,10 +1684,12 @@ begin
     brain.lstCarsTmp.Exchange( Brain.RndGenerate0( brain.lstCarsTmp.count -1 ), Brain.RndGenerate0( brain.lstCarsTmp.count -1 ) );
   end;
 
-  Brain.CurrentCar := Brain.lstCarsTmp[0].Guid;
   Brain.lstCarsTmp[0].inGame := True;  //<-- modifica anche l'oggetto in lstcars
   aCell := Brain.FindCellStartingGrid(1);
   Brain.lstCarsTmp[0].Cell := aCell;
+  Brain.CurrentCar := Brain.lstCarsTmp[0].Guid; //<-- attiva ai_think
+
+
 end;
 procedure TForm1.StartRace;
 var
@@ -1694,9 +1709,13 @@ begin
 //  Brain.lstCarsTmp.Sort
 
   aCell := brain.FindStartingGrid(1);
-  Brain.CurrentCar := Brain.GetCarAtCell( aCell ).Guid;
+  Brain.CurrentCar := Brain.GetCarAtCell( aCell ).Guid; //<-- attiva ai_think
  // Brain.lstCarsTmp[0].inGame := True;  //<-- modifica anche l'oggetto in lstcars
  // aCell := Brain.FindCellStartingGrid(1);
  // Brain.lstCarsTmp[0].Cell := aCell;
+//for I := 0 to brain.lstCars.count -1 do begin
+//  brain.lstCars[i].CurrentGear := 0;
+
 end;
+
 end.

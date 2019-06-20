@@ -493,14 +493,14 @@ begin
     case Button of
       mbLeft: begin
         if SelectedCell <> nil then begin
-          AddAdjacent ( SelectedCell, lstSprite[0] );     // prima colora di giallo
+        //  AddAdjacent ( SelectedCell, lstSprite[0] );     // prima colora di giallo
           AddLinkForward ( SelectedCell, lstSprite[0] );  // poi colora di Verde
         end;
       end;
       mbRight: begin
         if SelectedCell <> nil then begin
           RemoveLinkForward ( SelectedCell, lstSprite[0] );
-          RemoveAdjacent ( SelectedCell, lstSprite[0] );
+      //    RemoveAdjacent ( SelectedCell, lstSprite[0] );
         end;
       end;
     end;

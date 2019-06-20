@@ -183,13 +183,11 @@ end;
 
 procedure TForm3.R12MouseEnter(Sender: TObject);
 var
-  aCar : TCar;
   i: Integer;
 begin
 //  Exit;
 //  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  aCar := Brain.FindCar( brain.CurrentCar );
-  brain.CalculateAllChance ( aCar, TCnSpeedButton (sender).Name, 0 );// ritorna una lista di InteractiveCells con punteggio roll
+  brain.CalculateAllChance ( brain.CurrentTCar, TCnSpeedButton (sender).Name, 0 );// ritorna una lista di InteractiveCells con punteggio roll
 
 
 end;

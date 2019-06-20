@@ -575,6 +575,7 @@ object Form1: TForm1
     CollisionDelay = 0
     ShowPerformance = False
     OnSpriteMouseMove = SE_Theater1SpriteMouseMove
+    OnSpriteMouseDown = SE_Theater1SpriteMouseDown
     VirtualWidth = 212
     Virtualheight = 212
     TabOrder = 3
