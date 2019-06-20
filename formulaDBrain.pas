@@ -434,7 +434,6 @@ begin
   if CurrentLane < 0 then Exit;  // Box
   if aCell.Lane < 0 then Exit;   // Box
   if CurrentLane = aCell.Lane then Exit; // stessa lane. nessun zigzag
-        { TODO : risolvere errore zigzagtot }
   // qui siamo in rettilineo e c'è un cambio di lane
   // se c'è una car nella cella linkforward sulla stessa lane
   aCellStraight := GetLinkForwardSameLane ( aPossiblePath.Path[aPossiblePath.Path.Count -1] );
@@ -539,10 +538,31 @@ begin
   else if RollDice = 'R48' then begin
     Rmax := 8;
   end
-  else if Maxdistance <> 0 then begin
-    Rmax := MaxDistance; // Override
+  else if RollDice = 'R712' then begin
+    Rmax := 12;
   end
-  else Exit;// pe ril momento
+  else if RollDice = 'R79' then begin
+    Rmax := 9;
+  end
+  else if RollDice = 'R1012' then begin
+    Rmax := 12;
+  end
+  else if RollDice = 'R1120' then begin
+    Rmax := 20;
+  end
+  else if RollDice = 'R1115' then begin
+    Rmax := 15;
+  end
+  else if RollDice = 'R1620' then begin
+    Rmax := 20;
+  end
+  else if RollDice = 'R2130' then begin
+    Rmax := 30;
+  end;
+
+  if Maxdistance <> 0 then begin
+    Rmax := MaxDistance; // Override
+  end;
 
   PossiblePaths.Clear;
   CreatePossiblePath   ( aCar );
@@ -561,6 +581,7 @@ begin
 
       GetLinkForward ( PossiblePaths[i].Path.Items[PossiblePaths[i].Path.Count-1], false, lstCellsTmp ); // dall'ultimo elemento, quindi ultima cella . lstcellstmp è sempre clear
       CurrentPath :=  PossiblePaths[i];
+     // if lstCellsTmp.Count = 0 then asm int 3; end; // <-- DEBUG
       if lstCellsTmp[0].Corner = 0 then begin
         case lstCellsTmp.count  of   // ne trova per forza da 1 a 3
           1: begin
@@ -605,7 +626,7 @@ begin
       else begin  // in curva non si può zigzagare quindi si seguono per forza le frecce
         for k := 0 to lstCellsTmp.count -1 do begin
           aNewPossiblePath := DuplicatePossiblePath ( CurrentPath );  //<-- aggiunge un nuovo Tpossiblepath privo dell'ultima cella trovata
-          aNewPossiblePath.Path.Add( lstCellsTmp[i] );
+          aNewPossiblePath.Path.Add( lstCellsTmp[k] );
           PossiblePaths.Add( aNewPossiblePath );
 
         end;
@@ -787,7 +808,7 @@ begin
     BrainInput( CurrentTCar, Roll );
     Exit;
   end;
-
+  // verifico ultima curva: posso giocarmi tutte le stats
   // Quanto mi manca alla prossima curva. Adesso non mi interessa il numero di stop
   case CurrentTCar.Cell.DistCorner of
     30..255: begin
@@ -796,7 +817,10 @@ begin
       Exit;
     end;
   end;
-
+// curva 1 stop --> risk gear+1 gear gear-1 gearspecial
+// checkstats in base a giri/curve rimanenti if box possible
+// curva 2 stop --> ragionamento più largo , preferisce scalare
+// if box checkstats
   //      else if CurrentTCar.CurrentGear = 1 then begin
         //BrainInput( CurrentTCar, 'R12' )
         //BrainInput( CurrentTCar, 'SETCAR' )

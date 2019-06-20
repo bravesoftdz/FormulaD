@@ -429,6 +429,9 @@ end;
 
 procedure TForm1.cbCPUCloseUp(Sender: TObject);
 begin
+  { TODO : per il momento no AI }
+  cbCPU.ItemIndex := 0;
+  Exit;
   if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
     cbHumanPlayers.ItemIndex := ( 10 -  StrToInt(cbCPU.Text) ) ;
 
@@ -572,7 +575,7 @@ begin
   for I := 0 to 9 do begin
     cbCPU.Items.add ( IntTostr(i));
   end;
-  cbCPU.ItemIndex := 9;
+  cbCPU.ItemIndex := 0;// no AI
 
   CarBmp[1].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
   CarBmp[2].bmp := SE_Bitmap.Create ( dir_Cars + '1.bmp');
@@ -627,6 +630,7 @@ begin
     MM3[i].Free;
   end;
   Brain.Free;
+  CloseHandle(Mutex);
 
 end;
 

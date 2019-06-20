@@ -51,6 +51,7 @@ type
     procedure DebugCbPathCloseUp(Sender: TObject);
     procedure ColorizePath ( aPath: TObjectList<TCell> );
     procedure DebugCbPathSelect(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
   public
@@ -60,6 +61,7 @@ type
     procedure SetupR;
     procedure ShowGear (CarAccount : Byte);
     procedure ShowDestinationCells;
+    procedure ShowPossibleDestinationCells( RollDice :String) ;
 
 
     procedure ShowCarStat ( Editing : boolean; CarAccount : Byte; Stat : TStat );
@@ -67,6 +69,8 @@ type
 
 var
   Form3: TForm3;
+  lastTCnSpeedButton :  TCnSpeedButton;
+  MutexDrawCells : Cardinal;
 
 implementation
 uses Unit1;
@@ -185,10 +189,13 @@ procedure TForm3.R12MouseEnter(Sender: TObject);
 var
   i: Integer;
 begin
-//  Exit;
-//  aCar := Brain.FindCar( MycarAccount ); // lavoro solo sulla mia car
-  brain.CalculateAllChance ( brain.CurrentTCar, TCnSpeedButton (sender).Name, 0 );// ritorna una lista di InteractiveCells con punteggio roll
+  if lastTCnSpeedButton = TCnSpeedButton (sender) then
+    Exit;
+  lastTCnSpeedButton :=  TCnSpeedButton (sender);
 
+  brain.CalculateAllChance ( brain.CurrentTCar, TCnSpeedButton (sender).Name, 0 );// ritorna una lista di Cells con punteggio roll
+
+  ShowPossibleDestinationCells ( TCnSpeedButton (sender).Name ) ;
 
 end;
 
@@ -197,6 +204,7 @@ var
   bmp : SE_Bitmap;
 begin
   Brain.DebugComboBox :=  DebugCbPath;
+  MutexDrawCells:=CreateMutex(nil,false,'DrawCells');
 
 
   bmp := SE_Bitmap.Create  ( dir_bmpWeather + 'TiresDry.bmp' );
@@ -242,10 +250,16 @@ begin
 
 end;
 
+procedure TForm3.FormDestroy(Sender: TObject);
+begin
+  CloseHandle ( MutexDrawcells);
+end;
+
 procedure TForm3.SetupQ;   // abilita btn scelta gomme
 var
   aCar : TCar;
 begin
+  CloseHandle(MutexDrawCells);
 
   // wet dry dipende dal brain
   if Brain.Track = 0 then
@@ -686,27 +700,98 @@ var
   bmp: SE_Bitmap;
   aSprite : SE_Sprite;
 begin
+  Form1.SE_EngineCells.RemoveAllSprites;
   Brain.CalculateAllChance( brain.FindCar (Brain.CurrentCar), ''{no roll}, brain.CurrentRoll {si max distance}  );
   for I := 0 to brain.PossiblePaths.count -1 do begin // tutti questi path sono lunghi brain.currentRoll + 1 e l'ultima cella mi interessa
     aCell  :=  Brain.PossiblePaths[i].Path.Items[Brain.PossiblePaths[i].Path.Count -1 ];
     // ora che ho la cella conosco pixel,pixely e posso evidenziarla. sono clicksprites cosi' che il successivo click farà SETCAR verso il server
-    // ci sono duplicati
-    Form1.SE_EngineCells.RemoveAllSprites;
-    bmp:= SE_Bitmap.Create ( 22,16 );
-    bmp.Bitmap.Canvas.Brush.color := clLime;
-    bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
-    bmp.Bitmap.Canvas.Font.color := clNavy;
-    Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
-    bmp.Bitmap.Canvas.Font.Size := 8;
-    bmp.Bitmap.Canvas.Brush.Style := bsClear;
-   // bmp.Bitmap.Canvas.Font.Style := [fsBold];
-    bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+    if Form1.SE_EngineCells.FindSprite ( IntTostr ( aCell.Guid) )= nil then begin
+      bmp:= SE_Bitmap.Create ( 22,16 );
+      bmp.Bitmap.Canvas.Brush.color := clLime;
+      bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+      bmp.Bitmap.Canvas.Font.color := clNavy;
+      Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+      bmp.Bitmap.Canvas.Font.Size := 8;
+      bmp.Bitmap.Canvas.Brush.Style := bsClear;
+     // bmp.Bitmap.Canvas.Font.Style := [fsBold];
+      bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
 
-    aSprite := Form1.SE_EngineCells.CreateSprite ( bmp.bitmap ,  IntToStr(aCell.guid),1,1,1000, aCell.PixelX, aCell.PixelY , True );
-    bmp.Free;
-    aSprite.bmp.Bitmap.Canvas.TextOut( 10,2, IntToStr(brain.CurrentRoll ));
-
+      aSprite := Form1.SE_EngineCells.CreateSprite ( bmp.bitmap ,  IntToStr(aCell.guid),1,1,1000, aCell.PixelX, aCell.PixelY , True );
+      bmp.Free;
+      aSprite.bmp.Bitmap.Canvas.TextOut( 10,2, IntToStr(brain.CurrentRoll ));
+    end;
   end;
 
 end;
+procedure TForm3.ShowPossibleDestinationCells  ( RollDice :String) ;
+var
+  i,P,rMin: Integer;
+  aCell: TCell;
+  bmp: SE_Bitmap;
+  aSprite : SE_Sprite;
+begin
+
+  WaitForSingleObject ( MutexDrawCells, 200 );
+  Form1.SE_EngineCells.RemoveAllSprites;
+  Form1.SE_EngineCells.ProcessSprites(10);
+  if RollDice = 'R12' then begin
+    Rmin := 1;
+  end
+  else if RollDice = 'R24' then begin
+    Rmin := 2;
+  end
+  else if RollDice = 'R48' then begin
+    Rmin := 4;
+  end
+  else if RollDice = 'R712' then begin
+    Rmin := 7;
+  end
+  else if RollDice = 'R79' then begin
+    Rmin := 7;
+  end
+  else if RollDice = 'R1012' then begin
+    Rmin := 10;
+  end
+  else if RollDice = 'R1120' then begin
+    Rmin := 11;
+  end
+  else if RollDice = 'R1115' then begin
+    Rmin := 11;
+  end
+  else if RollDice = 'R1620' then begin
+    Rmin := 16;
+  end
+  else if RollDice = 'R2130' then begin
+    Rmin := 21;
+  end;
+
+
+  for I := 0 to brain.PossiblePaths.count -1 do begin // tutti questi path sono lunghi brain.currentRoll + 1 e l'ultima cella mi interessa
+    for P := Brain.PossiblePaths[i].Path.Count -1  downto rMin do begin // minimo 1 , evita la cella di partenza
+      aCell := Brain.PossiblePaths[i].Path.Items[P];
+      if Form1.SE_EngineCells.FindSprite ( IntTostr ( aCell.Guid) )= nil then begin
+
+        // ora che ho la cella conosco pixel,pixely e posso evidenziarla. sono clicksprites cosi' che il successivo click farà SETCAR verso il server
+        bmp:= SE_Bitmap.Create ( 22,16 );
+        bmp.Bitmap.Canvas.Brush.color := clLime;
+        bmp.Bitmap.Canvas.Ellipse(2,2,22,16);
+        bmp.Bitmap.Canvas.Font.color := clNavy;
+        Bmp.Bitmap.Canvas.Font.Name := 'Calibri';
+        bmp.Bitmap.Canvas.Font.Size := 8;
+        bmp.Bitmap.Canvas.Brush.Style := bsClear;
+       // bmp.Bitmap.Canvas.Font.Style := [fsBold];
+        bmp.Bitmap.Canvas.Font.Quality := fqAntialiased;
+        aSprite := Form1.SE_EngineCells.CreateSprite ( bmp.bitmap ,  IntToStr(aCell.guid),1,1,1000, aCell.PixelX, aCell.PixelY , True );
+        bmp.Free;
+        aSprite.bmp.Bitmap.Canvas.TextOut( 10,2, IntToStr( P ));
+      end;
+    end;
+
+
+  end;
+  ReleaseMutex(MutexDrawCells );
+
+end;
+
+
 end.
