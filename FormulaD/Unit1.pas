@@ -127,6 +127,7 @@ type
     procedure CarSpritesReset ( StartingGrid : Boolean );
   public
     { Public declarations }
+    procedure DeleteDirData;
     procedure ResetSetupWeather  ( aGridWeather: Se_grid);
     procedure InitializeCar ( aCar : Tcar );
     procedure StartQualifications;
@@ -138,6 +139,8 @@ type
 
 var
   Form1: TForm1;
+  MutexAnimation : Cardinal;
+
   dir_tmp, dir_bmpWeather, dir_Cars, dir_Circuits: string;
   CarBmp : array[1..10] of TCarBmp;
   RowPlayer: Integer; // per il cambio di colore
@@ -150,7 +153,7 @@ var
 
   MyCarAccount,LastTcpincMove,CurrentIncMove: byte;
   BmpTiresDry, BmpTiresWet, bmpPlus, bmpMinus : SE_Bitmap;
-
+  WaitingSetCar : Boolean;
 implementation
 uses Unit3;
 {$R *.dfm}
@@ -265,7 +268,7 @@ begin
     PanelCreateGame.Visible := False; //<-- solo per il server
     Brain.Weather := Brain.rndGenerate0 ( 3 );
     case Brain.Weather of
-      0: Brain.Track :=0;
+      0: Brain.Track :=0;  //<-- corners dinamici
       1: Brain.Track :=0;
       2: Brain.Track :=0;
       3: Brain.Track :=1;
@@ -429,7 +432,7 @@ end;
 
 procedure TForm1.cbCPUCloseUp(Sender: TObject);
 begin
-  { TODO : per il momento no AI }
+  { TODO : per il momento no AI. necessito DISTANCE in EditorMap }
   cbCPU.ItemIndex := 0;
   Exit;
   if (StrToInt(cbHumanPlayers.Text) + StrToInt(cbCPU.Text) ) > 10 then
@@ -530,6 +533,9 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   i: Integer;
 begin
+  DeleteDirData;
+  MutexAnimation:=CreateMutex(nil,false,'Animation');
+
   SE_Theater1.Left:=0;
   SE_Theater1.Top:=0;
   SE_Theater1.Width := Form1.Width;
@@ -631,6 +637,7 @@ begin
   end;
   Brain.Free;
   CloseHandle(Mutex);
+  CloseHandle(MutexAnimation);
 
 end;
 
@@ -742,7 +749,7 @@ end;
 procedure TForm1.SE_EngineCarsSpriteDestinationReached(ASprite: SE_Sprite);
 begin
   // Quando una Car raggiunge la cella indicata nel path, riavvia il Thread dell'animazione
-  ThreadCurMove.Enabled := True;
+//  ThreadCurMove.Enabled := True;
 end;
 
 procedure TForm1.SE_GridCarColorGridCellMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; CellX, CellY: Integer; Sprite: SE_Sprite);
@@ -784,8 +791,9 @@ end;
 procedure TForm1.SE_Theater1SpriteMouseDown(Sender: TObject; lstSprite: TObjectList<DSE_theater.SE_Sprite>; Button: TMouseButton; Shift: TShiftState);
 begin
   if lstsprite[0].Engine = SE_EngineCells then begin
-    SE_EngineCells.RemoveAllSprites;
     tcp.SendStr(  'SETCAR,'+ lstsprite[0].Guid + EndOfLine);
+    WaitingSetCar := False;
+    SE_EngineCells.RemoveAllSprites;
   end;
 
 end;
@@ -1055,7 +1063,7 @@ begin
       aCar.SE_Sprite := SE_EngineCars.CreateSprite ( dir_cars  + IntToStr(aCar.CarColor) + '.bmp', IntToStr(aCar.Guid),1,1,1000,0,0,true );
       aCar.SE_Sprite.Scale := 86;
       aCar.SE_Sprite.Visible := False;
-      aCar.Se_Sprite.MoverData.Speed := 12;
+      aCar.Se_Sprite.MoverData.Speed := 3;
 
     end;
 
@@ -1069,18 +1077,18 @@ begin
       aCar.SE_Sprite.Visible := True;
 //      CarSpritesReset ( True );
 
-    if aCar.Path.Count = 0 then begin
+  //  if aCar.Path.Count = 0 then begin
       aCar.Se_Sprite.Position := Point( aCar.Cell.PixelX,aCar.Cell.PixelY);
       aCar.Se_Sprite.Angle := aCar.Cell.Angle;
       aCar.Se_Sprite.MoverData.Destination := Point ( aCar.Cell.PixelX, aCar.Cell.PixelY );
-    end
-    else begin // se c'è un path mostro il movimento
+   // end
+   { else begin // se c'è un path mostro il movimento
       aCell := GetCell ( aCar.Path[0] );   //<-- l'elemento 0 è la vecchia cella di partenza
       aCar.Se_Sprite.Position := Point( aCell.PixelX , aCell.PixelY );
       aCar.Se_Sprite.Angle := aCell.Angle;
-      ThreadCurMove.Enabled := True;
+      aCar.Path.Delete(0);
 
-    end;
+    end;  }
 
   end;
 
@@ -1119,15 +1127,15 @@ begin
     Form3.Show;
     if Brain.CurrentRoll = 0 then
       Form3.ShowGear ( MyCarAccount )
-    else begin
-      form3.ShowDestinationCells; // <-- illumina le celle come debugcb
-      for i := 0 to Brain.lstcars.Count -1 do begin
-        if Brain.lstcars[i].path.count > 0 then begin
-          ThreadCurMove.Enabled := True;
-          Break;
-        end;
-      end;
-    end;
+    //else begin
+      else form3.ShowDestinationCells; // <-- illumina le celle come debugcb
+     // for i := 0 to Brain.lstcars.Count -1 do begin
+       // if Brain.lstcars[i].path.count > 0 then begin
+       //   ThreadCurMove.Enabled := True;
+       //   Break;
+      //  end;
+    //  end;
+   // end;
   end;
 
 // NOTE HERE
@@ -1508,16 +1516,30 @@ var
   aCar: TCar;
   aCell : TCell;
 begin
+  Exit;//<-per il momento no animation
+  WaitForSingleObject ( MutexAnimation, INFINITE );
+
+  if ( SE_EngineCars.IsAnySpriteMoving  ) then begin
+    se_Theater1.thrdAnimate.OnTimer (se_Theater1.thrdAnimate);
+    Application.ProcessMessages ;
+    ReleaseMutex ( MutexAnimation );
+    exit;
+  end;
+
   for I := 0 to brain.lstCars.Count -1 do begin
     aCar := brain.lstCars[i];
     if aCar.Path.Count > 0 then begin
       aCell := Brain.FindCell( aCar.Path[0] );
-      aCar.SE_Sprite.MoverData.Destination := Point( aCell.PixelX, aCell.PixelY );
-      aCar.Path.Delete(0);  // <-- elaborato il path viene svuotato di volta in volta
+      OutputDebugString( pchar (inttostr (aCell.Guid)) );
+     // if aCell <> acar.cell then begin
+        aCar.SE_Sprite.MoverData.Destination := Point( aCell.PixelX, aCell.PixelY );
+     // end;
+        aCar.Path.Delete(0);  // <-- elaborato il path viene svuotato di volta in volta
     end;
   end;
+  ReleaseMutex ( MutexAnimation );
 
-  ThreadCurMove.Enabled := False; //<-- viene riavviato in spritedestintionReached
+ // ThreadCurMove.Enabled := False; //<-- viene riavviato in spritedestintionReached
 
 end;
 
@@ -1596,13 +1618,34 @@ var
   aCell: TCell;
   TotLinkForward, TotAdjacent: Byte;
   aSprite: SE_Sprite;
+  Ts : TStringList;
 begin
   brain.Circuit.clear;
 
   ini := TIniFile.Create( dir_circuits + CircuitName + '.ini' );
   brain.CircuitDescr.Name := ini.ReadString('setup','Name','');
-  brain.CircuitDescr.Corners := ini.ReadString('setup','Corners','');
+  brain.CircuitDescr.Corners0 := ini.ReadString('setup','Corners0','');
+  brain.CircuitDescr.Corners1 := ini.ReadString('setup','Corners1','');
   ini.Free;
+
+  Brain.Corners[0].Clear;
+  Brain.Corners[1].Clear;
+  Brain.CornersActive.Clear;
+  Ts := TStringList.create;
+  Ts.CommaText := brain.CircuitDescr.Corners0;
+  for I := 0 to Ts.Count -1 do begin
+    Brain.Corners[0].add ( StrToInt(ts[i] ) );
+  end;
+  Ts.CommaText := brain.CircuitDescr.Corners1;
+  for I := 0 to Ts.Count -1 do begin
+    Brain.Corners[1].add ( StrToInt(ts[i] ) );
+  end;
+  Ts.Free;
+  for I := 0 to Brain.Corners[0].Count -1 do begin
+    Brain.CornersActive.add (  Brain.Corners[0][i] );  //<-- sempre dry all'inizio, startgame genera weather che cambia track e corners
+  end;
+
+
 
   mm.LoadFromFile(  dir_circuits + CircuitName + '.fd' );
   mm.Position := 0;
@@ -1719,6 +1762,31 @@ begin
  // Brain.lstCarsTmp[0].Cell := aCell;
 //for I := 0 to brain.lstCars.count -1 do begin
 //  brain.lstCars[i].CurrentGear := 0;
+
+end;
+procedure TForm1.DeleteDirData;
+var
+  i: Integer;
+  sf : SE_SearchFiles;
+begin
+  sf :=  SE_SearchFiles.Create(nil);
+
+  sf.MaskInclude.add ('*.is');
+  sf.FromPath := dir_tmp;
+  sf.SubDirectories := False;
+  sf.Execute ;
+
+  while Sf.SearchState <> ssIdle do begin
+    Application.ProcessMessages ;
+  end;
+
+  for I := 0 to sf.ListFiles.Count -1 do begin
+    if FileExists  ( PChar(dir_tmp +  sf.ListFiles[i]))  then
+        Deletefile ( PChar(dir_tmp + sf.ListFiles[i]));
+
+  end;
+
+  sf.Free;
 
 end;
 

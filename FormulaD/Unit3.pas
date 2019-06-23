@@ -181,6 +181,8 @@ begin
 end;
 procedure TForm3.R12Click(Sender: TObject);
 begin
+    WaitingSetCar := True;
+
     Form1.tcp.SendStr( TCnSpeedButton (sender).Name  + EndofLine );  // example R712 R1012 R48
 
 end;
@@ -189,6 +191,9 @@ procedure TForm3.R12MouseEnter(Sender: TObject);
 var
   i: Integer;
 begin
+  if WaitingSetCar then
+    Exit;
+
   if lastTCnSpeedButton = TCnSpeedButton (sender) then
     Exit;
   lastTCnSpeedButton :=  TCnSpeedButton (sender);
@@ -701,6 +706,7 @@ var
   aSprite : SE_Sprite;
 begin
   Form1.SE_EngineCells.RemoveAllSprites;
+  Form1.SE_EngineCells.ProcessSprites(10);
   Brain.CalculateAllChance( brain.FindCar (Brain.CurrentCar), ''{no roll}, brain.CurrentRoll {si max distance}  );
   for I := 0 to brain.PossiblePaths.count -1 do begin // tutti questi path sono lunghi brain.currentRoll + 1 e l'ultima cella mi interessa
     aCell  :=  Brain.PossiblePaths[i].Path.Items[Brain.PossiblePaths[i].Path.Count -1 ];

@@ -26,7 +26,8 @@ const TrackWet = 1;
 
 type TCircuitDescr = record
   Name : string[25];
-  Corners: string[255];
+  Corners0: string[255];
+  Corners1: string[255];
 end;
 type TCell = Class
   public
@@ -112,7 +113,7 @@ type TFormulaDBrain = class
     Qualifications: Byte;
     WeatherStart: Byte;
     Weather : Byte;
-    Track : Byte; // 0 dry 1 wet
+    fTrack : Byte; // 0 dry 1 wet
     Stage: Byte;
     fCurrentCar: Byte;
     CurrentTCar : TCar;
@@ -131,7 +132,12 @@ type TFormulaDBrain = class
    // PossiblePaths : TObjectList<TObjectList<TCell>>;
     DebugComboBox: TComboBox;
     CurrentRoll: ShortInt;
+
+
+    Corners : array [0..1] of SE_IntegerList;
+    CornersActive : SE_IntegerList;
     procedure SetCurrentCar ( aValue: Byte );
+    procedure SetTrack ( aValue: Byte );
   constructor Create;
   destructor Destroy;override;
   procedure CreateRndStartingGrid;
@@ -155,6 +161,11 @@ type TFormulaDBrain = class
   function RndGenerateRange( Lower, Upper: integer ): integer;
   function BrainInput ( InputCar: TCar; InputText : string ): string;
   property CurrentCar : byte read fCurrentCar write SetCurrentCar;
+  property Track : byte read fTrack write SetTrack; //<-- cambia i corner dinamici
+
+
+  procedure CheckCornerStop ( aPath: TObjectList<TCell> );
+
   procedure AI_Think;
     procedure AI_Think_Straight;
     procedure AI_Think_Corner;
@@ -211,12 +222,18 @@ begin
   MMbraindataZIP:= TMemoryStream.Create ;
   PossiblePaths := TObjectList<TPossiblePath>.Create(True);
 
+  Corners[0] := SE_IntegerList.Create;
+  Corners[1] := SE_IntegerList.Create;
+  CornersActive := SE_IntegerList.Create;
 end;
 destructor TFormulaDBrain.Destroy;
 var
   i: Integer;
 begin
 
+  Corners[0].Free;
+  Corners[1].Free;
+  CornersActive.Free;
   PossiblePaths.Free;
 
   Circuit.Free;
@@ -235,6 +252,17 @@ begin
   CurrentTCar := FindCar( fCurrentCar );
   if CurrentTCar.AI then begin
     AI_Think;
+  end;
+
+end;
+procedure TFormulaDBrain.SetTrack( aValue : Byte );
+var
+  i: Integer;
+begin
+  fTrack := aValue;
+  CornersActive.Clear;
+  for I := 0 to Corners[fTrack].Count -1 do begin   //<-- aggiorna corner dinamici dry/wet
+    CornersActive.Add( Corners[fTrack][i] );
   end;
 
 end;
@@ -694,9 +722,11 @@ begin
 end;
 function TFormulaDBrain.BrainInput ( InputCar: TCar;  InputText : string ): string;
 var
-  aCell : TCell;
+  aCell, dstCell : TCell;
+  aPath: TObjectList<TCell>;
   Ts : TStringList;
-  I: Integer;
+  I,P: Integer;
+  label skip;
 begin
   if CurrentTCar <> FindCar( InputCar.Guid ) then
     Exit;
@@ -763,6 +793,7 @@ begin
     end;
   end
   else if leftstr(InputText,6) = 'SETCAR' then begin
+    { TODO :       if CurrentTCar.inGame then }
     Ts := TStringList.Create;
     ts.CommaText := InputText;
     aCell := FindCell(  StrToInt( ts[1]) );
@@ -772,15 +803,36 @@ begin
       Currentroll := 0;
       // setta la car .riempe il path della car
       CurrentTCar.Path.Clear;
-      for I := 0 to PossiblePaths[0].Path.Count -1 do begin
-        CurrentTCar.Path.Add( PossiblePaths[0].Path[i].Guid );
+      dstCell := FindCell( StrToInt( ts[1] ));
+      for P := 0 to PossiblePaths[0].Path.Count -1 do begin
+        if PossiblePaths[p].Path[PossiblePaths[p].Path.Count -1] = dstCell then begin
+          aPath :=  PossiblePaths[p].Path;
+          for I := 0 to PossiblePaths[P].Path.Count -1 do begin
+            CurrentTCar.Path.Add( PossiblePaths[P].Path[i].Guid );
+          end;
+          goto skip;
+        end;
       end;
 
-      CurrentTCar.Cell := FindCell( StrToInt( ts[1] )); // nel client l'animazione ha come elemento 0 la cell attuale prima del movimento
+skip:
+    //  CheckCornerStop ( aPath );
+         CurrentTCar.Cell := dstCell; // nel client l'animazione ha come elemento 0 la cell attuale prima del movimento
       // calcolare cordoli in curva
     end;
     Ts.Free;
   end;
+
+end;
+procedure TFormulaDBrain.CheckCornerStop ( aPath: TObjectList<TCell> );
+var
+  aCell: TCell;
+begin
+  aCell := aPath[aPath.Count-1];
+  if CurrentTCar.NextCorner = aCell.Corner then begin
+    CurrentTCar.Stops := CurrentTCar.Stops + 1;       //<-- in caso di curve dinamiche si può essere colti all'improvviso
+  //  if CurrentTCar.Stops >= Corners[CurrentTCar.NextCorner].Stops then begin // in caso la pista ritorna asciutta >=
+//             Corners[CurrentTCar.NextCorner].Stops Corners[CurrentTCar.NextCorner].DryStops  Corners[CurrentTCar.NextCorner].WetStops
+    end;
 
 end;
 procedure TFormulaDBrain.AI_Think;
