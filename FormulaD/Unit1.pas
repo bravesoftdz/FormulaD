@@ -533,7 +533,6 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   i: Integer;
 begin
-  DeleteDirData;
   MutexAnimation:=CreateMutex(nil,false,'Animation');
 
   SE_Theater1.Left:=0;
@@ -552,6 +551,7 @@ begin
   dir_cars :=  ExtractFilePath (Application.ExeName)+ 'bmp\cars\';
   dir_Circuits := ExtractFilePath (Application.ExeName)+'circuits\';
   dir_bmpWeather :=  ExtractFilePath (Application.ExeName)+ 'bmp\Weather\';
+  DeleteDirData;
 
   SE_SearchFiles1.FromPath :=  ( dir_circuits );
   SE_SearchFiles1.MaskInclude.Add(  '*.ini');
